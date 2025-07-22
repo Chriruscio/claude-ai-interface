@@ -422,7 +422,7 @@ app.get('/', (req, res) => {
                 <button class="sidebar-toggle" id="sidebarToggle">
                     <i class="fas fa-bars"></i>
                 </button>
-                <button class="settings-btn" onclick="document.getElementById('settingsModal').style.display='block'">
+                <button class="settings-btn" onclick="openSettings()">
                     <i class="fas fa-cog"></i>
                 </button>
             </div>
@@ -494,8 +494,8 @@ app.get('/', (req, res) => {
                 <input type="password" class="form-input" id="apiKeyInput" placeholder="sk-ant-...">
                 <small style="color: #888; font-size: 12px;">Ottieni la tua API key su <a href="https://console.anthropic.com" target="_blank" style="color: #2563eb;">console.anthropic.com</a></small>
             </div>
-            <button class="test-button" id="testBtn">🧪 Test Connessione</button>
-            <button class="save-button" id="saveBtn">💾 Salva</button>
+            <button class="test-button" onclick="testConnection()">🧪 Test Connessione</button>
+            <button class="save-button" onclick="saveSettings()">💾 Salva</button>
         </div>
     </div>
 
@@ -522,11 +522,8 @@ app.get('/', (req, res) => {
             
             // Event listeners
             document.getElementById('sidebarToggle').addEventListener('click', toggleSidebar);
-            document.getElementById('settingsBtn').addEventListener('click', openSettings);
             document.getElementById('modalClose').addEventListener('click', closeSettings);
             document.getElementById('newChatBtn').addEventListener('click', newChat);
-            document.getElementById('testBtn').addEventListener('click', testConnection);
-            document.getElementById('saveBtn').addEventListener('click', saveSettings);
             document.getElementById('sendButton').addEventListener('click', sendMessage);
             
             // Textarea auto-resize e invio
@@ -623,7 +620,10 @@ app.get('/', (req, res) => {
         function selectConversation(id) {
             currentConversationId = id;
             document.querySelectorAll('.conversation-item').forEach(el => el.classList.remove('active'));
-            document.querySelector(\`[data-id="\${id}"]\`).classList.add('active');
+            const targetElement = document.querySelector('[data-id="' + id + '"]');
+            if (targetElement) {
+                targetElement.classList.add('active');
+            }
             loadConversation();
         }
 
@@ -632,9 +632,9 @@ app.get('/', (req, res) => {
             container.innerHTML = '';
             conversations.forEach(conv => {
                 const div = document.createElement('div');
-                div.className = \`conversation-item \${conv.id === currentConversationId ? 'active' : ''}\`;
+                div.className = 'conversation-item ' + (conv.id === currentConversationId ? 'active' : '');
                 div.dataset.id = conv.id;
-                div.innerHTML = \`<span>\${conv.title}</span>\`;
+                div.innerHTML = '<span>' + conv.title + '</span>';
                 div.addEventListener('click', () => selectConversation(conv.id));
                 container.appendChild(div);
             });
@@ -646,15 +646,14 @@ app.get('/', (req, res) => {
             chatContainer.innerHTML = '';
             
             if (conversation.messages.length === 0) {
-                chatContainer.innerHTML = \`
-                    <div class="message">
-                        <div class="message-avatar assistant-avatar">C</div>
-                        <div class="message-content">
-                            <p>Ciao! Sono Claude, il tuo assistente AI personalizzato. Come posso aiutarti oggi?</p>
-                            <p><em>💡 Perfetto per sviluppare bot MetaTrader e siti web!</em></p>
-                        </div>
-                    </div>
-                \`;
+                chatContainer.innerHTML = 
+                    '<div class="message">' +
+                        '<div class="message-avatar assistant-avatar">C</div>' +
+                        '<div class="message-content">' +
+                            '<p>Ciao! Sono Claude, il tuo assistente AI personalizzato. Come posso aiutarti oggi?</p>' +
+                            '<p><em>💡 Perfetto per sviluppare bot MetaTrader e siti web!</em></p>' +
+                        '</div>' +
+                    '</div>';
             } else {
                 conversation.messages.forEach(msg => {
                     addMessageToChat(msg.content, msg.role);
@@ -713,17 +712,16 @@ app.get('/', (req, res) => {
             const avatarClass = isUser ? 'user-avatar' : 'assistant-avatar';
             const avatarText = isUser ? 'U' : 'C';
             
-            messageDiv.innerHTML = \`
-                <div class="message-avatar \${avatarClass}">\${avatarText}</div>
-                <div class="message-content">\${formatMessage(content)}</div>
-            \`;
+            messageDiv.innerHTML = 
+                '<div class="message-avatar ' + avatarClass + '">' + avatarText + '</div>' +
+                '<div class="message-content">' + formatMessage(content) + '</div>';
             
             chatContainer.appendChild(messageDiv);
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
 
         function formatMessage(content) {
-            return content.replace(/\n/g, '<br>');
+            return content.replace(/\\n/g, '<br>');
         }
 
         function showTypingIndicator() {
@@ -744,7 +742,7 @@ app.get('/', (req, res) => {
             });
             
             if (!response.ok) {
-                throw new Error(\`HTTP error! status: \${response.status}\`);
+                throw new Error('HTTP error! status: ' + response.status);
             }
             
             const data = await response.json();
