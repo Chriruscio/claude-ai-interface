@@ -8,13 +8,12 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors({
-    origin: ['http://localhost:3000', 'http://127.0.0.1:3000', 'https://*.railway.app', 'https://*.vercel.app', 'https://*.herokuapp.com'],
+    origin: ['http://localhost:3000', 'http://127.0.0.1:3000', 'https://*.railway.app', 'https://*.vercel.app'],
     credentials: true
 }));
 app.use(express.json({ limit: '10mb' }));
-app.use(express.static('public'));
 
-// Serve il frontend integrato
+// Frontend integrato con tutte le funzioni JavaScript corrette
 app.get('/', (req, res) => {
     res.send(`<!DOCTYPE html>
 <html lang="it">
@@ -64,7 +63,7 @@ app.get('/', (req, res) => {
             justify-content: space-between;
         }
 
-        .sidebar-toggle {
+        .sidebar-toggle, .settings-btn {
             background: none;
             border: none;
             color: #888;
@@ -75,7 +74,7 @@ app.get('/', (req, res) => {
             transition: all 0.2s;
         }
 
-        .sidebar-toggle:hover {
+        .sidebar-toggle:hover, .settings-btn:hover {
             background: #333;
             color: #fff;
         }
@@ -128,10 +127,6 @@ app.get('/', (req, res) => {
 
         .conversation-item.active {
             background: #2563eb;
-        }
-
-        .sidebar.collapsed .conversation-item span {
-            display: none;
         }
 
         .main-content {
@@ -386,22 +381,6 @@ app.get('/', (req, res) => {
             30% { transform: translateY(-10px); opacity: 1; }
         }
 
-        .settings-btn {
-            background: none;
-            border: none;
-            color: #888;
-            cursor: pointer;
-            padding: 8px;
-            border-radius: 6px;
-            font-size: 18px;
-            transition: all 0.2s;
-        }
-
-        .settings-btn:hover {
-            background: #333;
-            color: #fff;
-        }
-
         .status-indicator {
             display: inline-block;
             width: 8px;
@@ -433,14 +412,6 @@ app.get('/', (req, res) => {
             .main-content {
                 width: 100%;
             }
-
-            .chat-header {
-                padding: 16px;
-            }
-
-            .input-container {
-                padding: 16px;
-            }
         }
     </style>
 </head>
@@ -448,21 +419,21 @@ app.get('/', (req, res) => {
     <div class="app-container">
         <div class="sidebar" id="sidebar">
             <div class="sidebar-header">
-                <button class="sidebar-toggle" onclick="toggleSidebar()">
+                <button class="sidebar-toggle" id="sidebarToggle">
                     <i class="fas fa-bars"></i>
                 </button>
-                <button class="settings-btn" onclick="document.getElementById('settingsModal').style.display='block'">
+                <button class="settings-btn" id="settingsBtn">
                     <i class="fas fa-cog"></i>
                 </button>
             </div>
             
-            <button class="new-chat-btn" onclick="newChat()">
+            <button class="new-chat-btn" id="newChatBtn">
                 <i class="fas fa-plus"></i>
                 <span>Nuova chat</span>
             </button>
             
             <div class="conversations" id="conversations">
-                <div class="conversation-item active" onclick="selectConversation(this)">
+                <div class="conversation-item active">
                     <span>Nuova conversazione</span>
                 </div>
             </div>
@@ -504,7 +475,7 @@ app.get('/', (req, res) => {
                         placeholder="Scrivi un messaggio... (es: 'Crea un bot MetaTrader per EURUSD')"
                         rows="1"
                     ></textarea>
-                    <button class="send-button" id="sendButton" onclick="sendMessage()">
+                    <button class="send-button" id="sendButton">
                         <i class="fas fa-paper-plane"></i>
                     </button>
                 </div>
@@ -516,25 +487,32 @@ app.get('/', (req, res) => {
         <div class="modal-content">
             <div class="modal-header">
                 <h3>⚙️ Impostazioni API</h3>
-                <button class="modal-close" onclick="closeSettings()">&times;</button>
+                <button class="modal-close" id="modalClose">&times;</button>
             </div>
             <div class="form-group">
                 <label class="form-label">🔑 API Key di Anthropic:</label>
                 <input type="password" class="form-input" id="apiKeyInput" placeholder="sk-ant-...">
                 <small style="color: #888; font-size: 12px;">Ottieni la tua API key su <a href="https://console.anthropic.com" target="_blank" style="color: #2563eb;">console.anthropic.com</a></small>
             </div>
-            <button class="test-button" onclick="testConnection()">🧪 Test Connessione</button>
-            <button class="save-button" onclick="saveSettings()">💾 Salva</button>
+            <button class="test-button" id="testBtn">🧪 Test Connessione</button>
+            <button class="save-button" id="saveBtn">💾 Salva</button>
         </div>
     </div>
 
     <script>
+        // Variabili globali
         let conversations = [{ id: 1, title: "Nuova conversazione", messages: [] }];
         let currentConversationId = 1;
         let apiKey = localStorage.getItem('claude-api-key') || '';
         let isConnected = false;
 
+        // Inizializzazione
         document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+        });
+
+        function initializeApp() {
+            // Carica API key salvata
             if (apiKey) {
                 document.getElementById('apiKeyInput').value = apiKey;
                 testConnection();
@@ -542,6 +520,16 @@ app.get('/', (req, res) => {
                 openSettings();
             }
             
+            // Event listeners
+            document.getElementById('sidebarToggle').addEventListener('click', toggleSidebar);
+            document.getElementById('settingsBtn').addEventListener('click', openSettings);
+            document.getElementById('modalClose').addEventListener('click', closeSettings);
+            document.getElementById('newChatBtn').addEventListener('click', newChat);
+            document.getElementById('testBtn').addEventListener('click', testConnection);
+            document.getElementById('saveBtn').addEventListener('click', saveSettings);
+            document.getElementById('sendButton').addEventListener('click', sendMessage);
+            
+            // Textarea auto-resize e invio
             const textarea = document.getElementById('messageInput');
             textarea.addEventListener('input', autoResize);
             textarea.addEventListener('keydown', function(e) {
@@ -550,12 +538,13 @@ app.get('/', (req, res) => {
                     sendMessage();
                 }
             });
-        });
 
-        function autoResize() {
-            const textarea = document.getElementById('messageInput');
-            textarea.style.height = 'auto';
-            textarea.style.height = textarea.scrollHeight + 'px';
+            // Click fuori modal per chiudere
+            window.addEventListener('click', function(e) {
+                if (e.target === document.getElementById('settingsModal')) {
+                    closeSettings();
+                }
+            });
         }
 
         function toggleSidebar() {
@@ -574,6 +563,7 @@ app.get('/', (req, res) => {
             const testKey = document.getElementById('apiKeyInput').value || apiKey;
             if (!testKey) {
                 updateConnectionStatus(false);
+                alert('❌ Inserisci prima una API key');
                 return;
             }
 
@@ -616,6 +606,12 @@ app.get('/', (req, res) => {
             }
         }
 
+        function autoResize() {
+            const textarea = document.getElementById('messageInput');
+            textarea.style.height = 'auto';
+            textarea.style.height = textarea.scrollHeight + 'px';
+        }
+
         function newChat() {
             const newId = Math.max(...conversations.map(c => c.id)) + 1;
             conversations.push({ id: newId, title: "Nuova conversazione", messages: [] });
@@ -624,22 +620,22 @@ app.get('/', (req, res) => {
             clearChat();
         }
 
-        function selectConversation(element) {
+        function selectConversation(id) {
+            currentConversationId = id;
             document.querySelectorAll('.conversation-item').forEach(el => el.classList.remove('active'));
-            element.classList.add('active');
-            const index = Array.from(element.parentNode.children).indexOf(element);
-            currentConversationId = conversations[index].id;
+            document.querySelector(\`[data-id="\${id}"]\`).classList.add('active');
             loadConversation();
         }
 
         function updateConversationsList() {
             const container = document.getElementById('conversations');
             container.innerHTML = '';
-            conversations.forEach((conv, index) => {
+            conversations.forEach(conv => {
                 const div = document.createElement('div');
                 div.className = \`conversation-item \${conv.id === currentConversationId ? 'active' : ''}\`;
+                div.dataset.id = conv.id;
                 div.innerHTML = \`<span>\${conv.title}</span>\`;
-                div.onclick = () => selectConversation(div);
+                div.addEventListener('click', () => selectConversation(conv.id));
                 container.appendChild(div);
             });
         }
@@ -758,10 +754,6 @@ app.get('/', (req, res) => {
             
             const data = await response.json();
             return data.content;
-        }
-
-        if (window.innerWidth <= 768) {
-            document.getElementById('sidebar').classList.add('collapsed');
         }
     </script>
 </body>
@@ -895,12 +887,11 @@ app.get('/api/health', (req, res) => {
     });
 });
 
-// 404 handler
+// Error handlers
 app.use((req, res) => {
     res.status(404).json({ error: '❌ Endpoint non trovato' });
 });
 
-// Error handler
 app.use((error, req, res, next) => {
     console.error('❌ Errore non gestito:', error);
     res.status(500).json({ error: 'Errore interno del server' });
