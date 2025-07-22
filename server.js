@@ -451,7 +451,7 @@ app.get('/', (req, res) => {
                 <button class="sidebar-toggle" onclick="toggleSidebar()">
                     <i class="fas fa-bars"></i>
                 </button>
-                <button class="settings-btn" onclick="openSettings()">
+                <button class="settings-btn" onclick="document.getElementById('settingsModal').style.display='block'">
                     <i class="fas fa-cog"></i>
                 </button>
             </div>
