@@ -422,7 +422,7 @@ app.get('/', (req, res) => {
                 <button class="sidebar-toggle" id="sidebarToggle">
                     <i class="fas fa-bars"></i>
                 </button>
-                <button class="settings-btn" id="settingsBtn">
+                <button class="settings-btn" onclick="document.getElementById('settingsModal').style.display='block'">
                     <i class="fas fa-cog"></i>
                 </button>
             </div>
@@ -723,12 +723,7 @@ app.get('/', (req, res) => {
         }
 
         function formatMessage(content) {
-            content = content.replace(/\`\`\`(\w+)?\n([\s\S]*?)\`\`\`/g, '<pre><code>$2</code></pre>');
-            content = content.replace(/\`([^\`]+)\`/g, '<code>$1</code>');
-            content = content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-            content = content.replace(/\*(.*?)\*/g, '<em>$1</em>');
-            content = content.replace(/\n/g, '<br>');
-            return content;
+            return content.replace(/\n/g, '<br>');
         }
 
         function showTypingIndicator() {
