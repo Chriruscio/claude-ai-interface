@@ -217,24 +217,32 @@ app.get('/', (req, res) => {
         });
 
         async function initializeApp() {
-            setupEventListeners();
-            if (apiKey) {
-                document.getElementById('apiKeyInput').value = apiKey;
-                testConnection();
-            }
-            
-            // Listen for auth changes
-            window.supabase.auth.onAuthStateChange((event, session) => {
-                if (session?.user) {
-                    currentUser = session.user;
-                    showUserInterface(session.user);
-                    loadUserData();
-                } else {
-                    currentUser = null;
-                    showLoginInterface();
-                }
-            });
+    setupEventListeners();
+    if (apiKey) {
+        document.getElementById('apiKeyInput').value = apiKey;
+        testConnection();
+    }
+    
+    // Handle OAuth callback
+    const { data, error } = await window.supabase.auth.getSession();
+    if (data?.session) {
+        currentUser = data.session.user;
+        showUserInterface(data.session.user);
+        loadUserData();
+    }
+    
+    // Listen for auth changes
+    window.supabase.auth.onAuthStateChange((event, session) => {
+        if (session?.user) {
+            currentUser = session.user;
+            showUserInterface(session.user);
+            loadUserData();
+        } else {
+            currentUser = null;
+            showLoginInterface();
         }
+    });
+}
 
         function setupEventListeners() {
             document.getElementById('sidebarToggle').addEventListener('click', toggleSidebar);
