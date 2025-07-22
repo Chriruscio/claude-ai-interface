@@ -12,7 +12,7 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 
 app.get('/', (req, res) => {
-    res.send(`<!DOCTYPE html>
+    const htmlContent = `<!DOCTYPE html>
 <html lang="it">
 <head>
     <meta charset="UTF-8">
@@ -47,7 +47,6 @@ app.get('/', (req, res) => {
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #1a1a1a; color: #e5e5e5; height: 100vh; overflow: hidden; }
         .app-container { display: flex; height: 100vh; }
         .sidebar { width: 260px; background: #171717; border-right: 1px solid #333; display: flex; flex-direction: column; transition: all 0.3s ease; }
-        .sidebar.collapsed { width: 60px; }
         .sidebar-header { padding: 16px; border-bottom: 1px solid #333; display: flex; align-items: center; justify-content: space-between; }
         .user-info { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid #333; font-size: 14px; }
         .user-avatar { width: 32px; height: 32px; border-radius: 50%; background: #2563eb; }
@@ -81,8 +80,6 @@ app.get('/', (req, res) => {
         .user-avatar-msg { background: #2563eb; color: white; }
         .assistant-avatar { background: #16a34a; color: white; }
         .message-content { flex: 1; line-height: 1.6; }
-        .message-content pre { background: #2a2a2a; border: 1px solid #444; border-radius: 8px; padding: 16px; overflow-x: auto; margin: 12px 0; }
-        .message-content code { background: #2a2a2a; padding: 2px 6px; border-radius: 4px; font-family: Monaco, Menlo, monospace; }
         .input-container { padding: 20px; border-top: 1px solid #333; background: #1a1a1a; }
         .input-wrapper { max-width: 1000px; margin: 0 auto; position: relative; }
         .message-input { width: 100%; background: #2a2a2a; border: 1px solid #444; border-radius: 24px; padding: 16px 60px 16px 20px; color: white; font-size: 16px; resize: none; min-height: 56px; max-height: 200px; outline: none; transition: all 0.2s; }
@@ -110,7 +107,6 @@ app.get('/', (req, res) => {
         .status-indicator { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-left: 8px; }
         .status-connected { background: #16a34a; }
         .status-disconnected { background: #dc2626; }
-        @media (max-width: 768px) { .sidebar { position: fixed; left: -260px; z-index: 100; height: 100vh; } .sidebar.open { left: 0; } .main-content { width: 100%; } }
     </style>
 </head>
 <body>
@@ -205,7 +201,6 @@ app.get('/', (req, res) => {
             <div class="form-group">
                 <label class="form-label">🔑 API Key di Anthropic:</label>
                 <input type="password" class="form-input" id="apiKeyInput" placeholder="sk-ant-...">
-                <small style="color: #888; font-size: 12px;">Ottieni la tua API key su <a href="https://console.anthropic.com" target="_blank" style="color: #2563eb;">console.anthropic.com</a></small>
             </div>
             <button class="test-button" onclick="testConnection()">🧪 Test Connessione</button>
             <button class="save-button" onclick="saveSettings()">💾 Salva</button>
@@ -221,10 +216,6 @@ app.get('/', (req, res) => {
             <div class="form-group">
                 <label class="form-label">Nome Progetto:</label>
                 <input type="text" class="form-input" id="projectNameInput" placeholder="es. Bot MetaTrader EURUSD">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Descrizione (opzionale):</label>
-                <textarea class="form-input" id="projectDescInput" placeholder="Descrizione del progetto..." rows="3"></textarea>
             </div>
             <button class="create-button" onclick="saveProject()">📁 Crea Progetto</button>
         </div>
@@ -274,31 +265,20 @@ app.get('/', (req, res) => {
                     sendMessage();
                 }
             });
-
-            window.addEventListener('click', function(e) {
-                if (e.target === document.getElementById('settingsModal')) {
-                    closeSettings();
-                }
-                if (e.target === document.getElementById('createProjectModal')) {
-                    closeCreateProject();
-                }
-            });
         }
 
         async function googleLogin() {
             try {
                 const result = await window.firebase.signInWithPopup(window.firebase.auth, window.firebase.provider);
-                console.log('Login successful:', result.user);
+                console.log('Login successful');
             } catch (error) {
-                console.error('Login error:', error);
-                alert('❌ Errore nel login: ' + error.message);
+                alert('❌ Errore nel login');
             }
         }
 
         async function logoutUser() {
             try {
                 await window.firebase.signOut(window.firebase.auth);
-                console.log('Logout successful');
             } catch (error) {
                 console.error('Logout error:', error);
             }
@@ -316,7 +296,7 @@ app.get('/', (req, res) => {
             
             const messageInput = document.getElementById('messageInput');
             messageInput.disabled = false;
-            messageInput.placeholder = 'Scrivi un messaggio... (es: "Crea un bot MetaTrader per EURUSD")';
+            messageInput.placeholder = 'Scrivi un messaggio...';
             
             if (apiKey && isConnected) {
                 document.getElementById('sendButton').disabled = false;
@@ -344,31 +324,22 @@ app.get('/', (req, res) => {
         function closeCreateProject() {
             document.getElementById('createProjectModal').style.display = 'none';
             document.getElementById('projectNameInput').value = '';
-            document.getElementById('projectDescInput').value = '';
         }
 
         async function saveProject() {
             const name = document.getElementById('projectNameInput').value.trim();
-            const description = document.getElementById('projectDescInput').value.trim();
             
-            if (!name) {
-                alert('❌ Inserisci un nome per il progetto');
-                return;
-            }
-
-            if (!currentUser) {
-                alert('❌ Devi essere loggato per creare un progetto');
+            if (!name || !currentUser) {
+                alert('❌ Nome progetto richiesto');
                 return;
             }
 
             try {
                 const projectData = {
                     name: name,
-                    description: description,
                     userId: currentUser.uid,
                     createdAt: new Date(),
-                    updatedAt: new Date(),
-                    conversationCount: 0
+                    updatedAt: new Date()
                 };
 
                 const docRef = await window.firebase.addDoc(
@@ -376,13 +347,10 @@ app.get('/', (req, res) => {
                     projectData
                 );
 
-                console.log('Project created with ID:', docRef.id);
                 closeCreateProject();
                 loadUserData();
-                selectProject(docRef.id, name);
                 
             } catch (error) {
-                console.error('Error creating project:', error);
                 alert('❌ Errore nella creazione del progetto');
             }
         }
@@ -407,7 +375,7 @@ app.get('/', (req, res) => {
                 renderProjects(projects);
                 
             } catch (error) {
-                console.error('Error loading user data:', error);
+                console.error('Error loading data:', error);
             }
         }
 
@@ -426,7 +394,7 @@ app.get('/', (req, res) => {
                 
                 const countDiv = document.createElement('div');
                 countDiv.className = 'project-chat-count';
-                countDiv.textContent = (project.conversationCount || 0) + ' conversazioni';
+                countDiv.textContent = '0 conversazioni';
                 
                 projectDiv.appendChild(titleDiv);
                 projectDiv.appendChild(countDiv);
@@ -446,100 +414,11 @@ app.get('/', (req, res) => {
             }
             
             document.getElementById('currentProject').textContent = '📁 ' + projectName;
-            loadProjectConversations(projectId);
-        }
-
-        async function loadProjectConversations(projectId) {
-            if (!currentUser) return;
-
-            try {
-                const conversationsQuery = window.firebase.query(
-                    window.firebase.collection(window.firebase.db, 'conversations'),
-                    window.firebase.where('userId', '==', currentUser.uid),
-                    window.firebase.where('projectId', '==', projectId),
-                    window.firebase.orderBy('updatedAt', 'desc')
-                );
-                
-                const conversationsSnapshot = await window.firebase.getDocs(conversationsQuery);
-                const conversations = [];
-                
-                conversationsSnapshot.forEach((doc) => {
-                    conversations.push({ id: doc.id, ...doc.data() });
-                });
-
-                renderConversations(conversations);
-                
-            } catch (error) {
-                console.error('Error loading conversations:', error);
-            }
-        }
-
-        function renderConversations(conversations) {
-            document.querySelectorAll('.conversation-item').forEach(el => el.remove());
-            
-            conversations.forEach(conv => {
-                const convDiv = document.createElement('div');
-                convDiv.className = 'conversation-item';
-                convDiv.dataset.id = conv.id;
-                
-                const span = document.createElement('span');
-                span.textContent = conv.title;
-                convDiv.appendChild(span);
-                
-                convDiv.addEventListener('click', () => selectConversation(conv.id));
-                
-                const currentProjectEl = document.querySelector('.project-item.active');
-                if (currentProjectEl) {
-                    currentProjectEl.insertAdjacentElement('afterend', convDiv);
-                }
-            });
-        }
-
-        async function selectConversation(conversationId) {
-            currentConversation = conversationId;
-            
-            document.querySelectorAll('.conversation-item').forEach(el => el.classList.remove('active'));
-            const targetElement = document.querySelector('[data-id="' + conversationId + '"]');
-            if (targetElement) {
-                targetElement.classList.add('active');
-            }
-            
-            await loadConversationMessages(conversationId);
-        }
-
-        async function loadConversationMessages(conversationId) {
-            try {
-                const messagesQuery = window.firebase.query(
-                    window.firebase.collection(window.firebase.db, 'messages'),
-                    window.firebase.where('conversationId', '==', conversationId),
-                    window.firebase.orderBy('timestamp', 'asc')
-                );
-                
-                const messagesSnapshot = await window.firebase.getDocs(messagesQuery);
-                const messages = [];
-                
-                messagesSnapshot.forEach((doc) => {
-                    messages.push({ id: doc.id, ...doc.data() });
-                });
-
-                document.getElementById('chatContainer').innerHTML = '';
-                messages.forEach(msg => {
-                    addMessageToChat(msg.content, msg.role);
-                });
-                
-            } catch (error) {
-                console.error('Error loading messages:', error);
-            }
         }
 
         async function newChat() {
-            if (!currentProject) {
+            if (!currentProject || !currentUser) {
                 alert('⚠️ Seleziona prima un progetto!');
-                return;
-            }
-
-            if (!currentUser) {
-                alert('⚠️ Devi essere loggato!');
                 return;
             }
 
@@ -549,8 +428,7 @@ app.get('/', (req, res) => {
                     userId: currentUser.uid,
                     projectId: currentProject,
                     createdAt: new Date(),
-                    updatedAt: new Date(),
-                    messageCount: 0
+                    updatedAt: new Date()
                 };
 
                 const docRef = await window.firebase.addDoc(
@@ -561,21 +439,11 @@ app.get('/', (req, res) => {
                 currentConversation = docRef.id;
                 
                 document.getElementById('chatContainer').innerHTML = '';
-                addWelcomeMessage();
-                
-                loadProjectConversations(currentProject);
+                addMessageToChat('🚀 Nuova conversazione avviata! Come posso aiutarti?', 'assistant');
                 
             } catch (error) {
-                console.error('Error creating conversation:', error);
                 alert('❌ Errore nella creazione della chat');
             }
-        }
-
-        function addWelcomeMessage() {
-            addMessageToChat(
-                '🚀 Nuova conversazione avviata! Come posso aiutarti oggi?\\n\\n💡 Suggerimenti:\\n- Chiedi di creare codice HTML/CSS/JS\\n- Fai domande tecniche\\n- Organizza tutto nei tuoi progetti',
-                'assistant'
-            );
         }
 
         async function sendMessage() {
@@ -585,13 +453,8 @@ app.get('/', (req, res) => {
                 return;
             }
 
-            if (!currentUser) {
-                alert('⚠️ Accedi prima con Google!');
-                return;
-            }
-
-            if (!currentConversation) {
-                alert('⚠️ Crea prima una conversazione!');
+            if (!currentUser || !currentConversation) {
+                alert('⚠️ Accedi e crea una conversazione!');
                 return;
             }
 
@@ -601,8 +464,6 @@ app.get('/', (req, res) => {
 
             try {
                 addMessageToChat(message, 'user');
-                await saveMessageToFirebase(message, 'user');
-
                 input.value = '';
                 input.style.height = 'auto';
                 showTypingIndicator();
@@ -612,56 +473,11 @@ app.get('/', (req, res) => {
                 
                 if (response) {
                     addMessageToChat(response, 'assistant');
-                    await saveMessageToFirebase(response, 'assistant');
                 }
                 
             } catch (error) {
                 hideTypingIndicator();
-                addMessageToChat('❌ Errore nella comunicazione con Claude. Verifica le impostazioni.', 'assistant');
-                console.error('Error:', error);
-            }
-        }
-
-        async function saveMessageToFirebase(content, role) {
-            try {
-                const messageData = {
-                    conversationId: currentConversation,
-                    userId: currentUser.uid,
-                    content: content,
-                    role: role,
-                    timestamp: new Date()
-                };
-
-                await window.firebase.addDoc(
-                    window.firebase.collection(window.firebase.db, 'messages'), 
-                    messageData
-                );
-
-                if (role === 'user') {
-                    await updateConversationTitle(content);
-                }
-                
-            } catch (error) {
-                console.error('Error saving message:', error);
-            }
-        }
-
-        async function updateConversationTitle(firstMessage) {
-            try {
-                const title = firstMessage.substring(0, 50) + (firstMessage.length > 50 ? '...' : '');
-                const conversationRef = window.firebase.doc(window.firebase.db, 'conversations', currentConversation);
-                
-                await window.firebase.updateDoc(conversationRef, {
-                    title: title,
-                    updatedAt: new Date()
-                });
-                
-                if (currentProject) {
-                    loadProjectConversations(currentProject);
-                }
-                
-            } catch (error) {
-                console.error('Error updating conversation title:', error);
+                addMessageToChat('❌ Errore nella comunicazione con Claude.', 'assistant');
             }
         }
 
@@ -690,11 +506,10 @@ app.get('/', (req, res) => {
         }
 
         function formatMessage(content) {
-            return content
-                .replace(/\\n/g, '<br>')
-                .replace(/\\*\\*(.*?)\\*\\*/g, '<strong>$1</strong>')
-                .replace(/\\*(.*?)\\*/g, '<em>$1</em>')
-                .replace(/`([^`]+)`/g, '<code>$1</code>');
+            var formatted = content.replace(/\\n/g, '<br>');
+            formatted = formatted.replace(/\\*\\*(.*?)\\*\\*/g, '<strong>$1</strong>');
+            formatted = formatted.replace(/\\*(.*?)\\*/g, '<em>$1</em>');
+            return formatted;
         }
 
         function toggleSidebar() {
@@ -733,11 +548,11 @@ app.get('/', (req, res) => {
                         document.getElementById('sendButton').disabled = false;
                     }
                 } else {
-                    alert('❌ ' + (result.error || 'Connessione fallita'));
+                    alert('❌ Connessione fallita');
                 }
             } catch (error) {
                 updateConnectionStatus(false);
-                alert('❌ Errore di rete: ' + error.message);
+                alert('❌ Errore di rete');
             }
         }
 
@@ -788,7 +603,7 @@ app.get('/', (req, res) => {
             });
             
             if (!response.ok) {
-                throw new Error('HTTP error! status: ' + response.status);
+                throw new Error('HTTP error');
             }
             
             const data = await response.json();
@@ -796,149 +611,4 @@ app.get('/', (req, res) => {
         }
     </script>
 </body>
-</html>`);
-});
-
-app.post('/api/chat', async (req, res) => {
-    try {
-        const { messages, model, apiKey } = req.body;
-
-        if (!apiKey) {
-            return res.status(400).json({ error: 'API key richiesta' });
-        }
-
-        if (!messages || !Array.isArray(messages)) {
-            return res.status(400).json({ error: 'Array di messaggi richiesto' });
-        }
-
-        const validModels = ['claude-sonnet-4-20250514', 'claude-opus-4'];
-        const selectedModel = validModels.includes(model) ? model : 'claude-sonnet-4-20250514';
-
-        console.log(`📤 Richiesta a Claude ${selectedModel} - ${messages.length} messaggi`);
-
-        const anthropicResponse = await fetch('https://api.anthropic.com/v1/messages', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': apiKey,
-                'anthropic-version': '2023-06-01'
-            },
-            body: JSON.stringify({
-                model: selectedModel,
-                max_tokens: 4000,
-                messages: messages,
-                temperature: 0.7
-            })
-        });
-
-        if (!anthropicResponse.ok) {
-            const errorData = await anthropicResponse.text();
-            console.error('❌ Errore API Anthropic:', errorData);
-            
-            let errorMessage = 'Errore nella chiamata API';
-            try {
-                const parsedError = JSON.parse(errorData);
-                if (parsedError.error && parsedError.error.message) {
-                    errorMessage = parsedError.error.message;
-                }
-            } catch (e) {}
-            
-            return res.status(anthropicResponse.status).json({ 
-                error: errorMessage,
-                details: errorData 
-            });
-        }
-
-        const data = await anthropicResponse.json();
-        
-        if (data.content && data.content[0] && data.content[0].text) {
-            console.log('✅ Risposta ricevuta da Claude');
-            res.json({ 
-                content: data.content[0].text,
-                model: selectedModel,
-                usage: data.usage 
-            });
-        } else {
-            console.error('❌ Formato risposta inaspettato:', data);
-            res.status(500).json({ error: 'Formato di risposta API inaspettato' });
-        }
-
-    } catch (error) {
-        console.error('❌ Errore server:', error);
-        res.status(500).json({ 
-            error: 'Errore interno del server',
-            details: error.message 
-        });
-    }
-});
-
-app.post('/api/test', async (req, res) => {
-    try {
-        const { apiKey } = req.body;
-
-        if (!apiKey) {
-            return res.status(400).json({ success: false, error: 'API key richiesta' });
-        }
-
-        const testResponse = await fetch('https://api.anthropic.com/v1/messages', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': apiKey,
-                'anthropic-version': '2023-06-01'
-            },
-            body: JSON.stringify({
-                model: 'claude-sonnet-4-20250514',
-                max_tokens: 20,
-                messages: [{ role: 'user', content: 'Test' }]
-            })
-        });
-
-        if (testResponse.ok) {
-            console.log('✅ Test API riuscito');
-            res.json({ success: true, message: 'API key valida!' });
-        } else {
-            const errorData = await testResponse.text();
-            console.log('❌ Test API fallito:', errorData);
-            res.status(testResponse.status).json({ 
-                success: false, 
-                error: 'API key non valida'
-            });
-        }
-
-    } catch (error) {
-        console.error('❌ Errore test API:', error);
-        res.status(500).json({ 
-            success: false, 
-            error: 'Errore nel test API'
-        });
-    }
-});
-
-app.get('/api/health', (req, res) => {
-    res.json({ 
-        status: '✅ OK', 
-        timestamp: new Date().toISOString(),
-        version: '3.0.0-ultra-clean'
-    });
-});
-
-app.use((req, res) => {
-    res.status(404).json({ error: '❌ Endpoint non trovato' });
-});
-
-app.use((error, req, res, next) => {
-    console.error('❌ Errore non gestito:', error);
-    res.status(500).json({ error: 'Errore interno del server' });
-});
-
-app.listen(PORT, () => {
-    console.log('🔥 ========================================');
-    console.log('🔥     CLAUDE AI INTERFACE - CLEAN       🔥');  
-    console.log('🔥 ========================================');
-    console.log(`📱 Frontend: http://localhost:${PORT}`);
-    console.log(`🔗 API: http://localhost:${PORT}/api/chat`);
-    console.log(`💚 Health: http://localhost:${PORT}/api/health`);
-    console.log('🔥 ✅ Firebase Auth + Projects + Zero Errors');
-    console.log('🔥 ========================================');
-});
+</html>
