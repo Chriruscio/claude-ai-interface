@@ -26,12 +26,12 @@ app.get('/', (req, res) => {
         import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where, orderBy } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 
         const firebaseConfig = {
-            apiKey: "AIzaSyCfPL-PvUpQ5pN1lmz3VoELeyzKZfSu5qQ",
+            apiKey: "AIzaSyB-upKfPVITJrLJLt6YTNBRAQsyP663jRI",
             authDomain: "claude-ai-interface.firebaseapp.com",
             projectId: "claude-ai-interface",
             storageBucket: "claude-ai-interface.firebasestorage.app",
             messagingSenderId: "896187447055",
-            appId: "1:896187447055:web:23cc1e986d77d38cac07a"
+            appId: "1:896187447055:web:a86e16d8f54c0eacf07a"
         };
 
         const app = initializeApp(firebaseConfig);
