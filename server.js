@@ -27,14 +27,14 @@ app.get('/', (req, res) => {
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ4Zm51eGh3dWlnbXRkeXNmaG5iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzc1NDQ4MzEsImV4cCI6MjA1MzEyMDgzMX0.u-eXqc-l6v7vCHsVVKlK8J1wTfhuwS6RGNrCTNH82RM';
         
         window.supabase = createClient(supabaseUrl, supabaseKey);
-// AGGIUNGI QUI:
-if (window.location.hash.includes('access_token')) {
-    window.supabase.auth.getSession().then(({ data, error }) => {
-        if (data?.session?.user) {
-            window.location.href = window.location.origin;
-        }
-    });
-}
+// Handle OAuth callback properly
+window.supabase.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_IN' && session?.user) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+        window.location.reload();
+    }
+});
+
     </script>
     
     <style>
@@ -668,25 +668,7 @@ if (window.location.hash.includes('access_token')) {
             return data.content;
         }
 
-        // Initialize database tables on first load
-        async function initializeTables() {
-            try {
-                // Create projects table if not exists
-                const { error: projectsError } = await window.supabase.rpc('create_projects_table');
-                
-                // Create conversations table if not exists  
-                const { error: conversationsError } = await window.supabase.rpc('create_conversations_table');
-                
-                // Create messages table if not exists
-                const { error: messagesError } = await window.supabase.rpc('create_messages_table');
-                
-            } catch (error) {
-                console.log('Tables might already exist or RPC not available:', error);
-            }
-        }
-
-        // Call initialize tables on app start
-        initializeTables();
+        
     </script>
 </body>
 </html>`);
