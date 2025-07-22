@@ -723,8 +723,8 @@ app.get('/', (req, res) => {
         }
 
         function formatMessage(content) {
-            content = content.replace(/\`\`\`(\w+)?\n([\s\S]*?)\`\`\`/g, '<pre><code>$2</code></pre>');
-            content = content.replace(/\`([^\`]+)\`/g, '<code>$1</code>');
+            content = content.replace(/```(\w+)?\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>');
+            content = content.replace(/`([^`]+)`/g, '<code>$1</code>');
             content = content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
             content = content.replace(/\*(.*?)\*/g, '<em>$1</em>');
             content = content.replace(/\n/g, '<br>');
