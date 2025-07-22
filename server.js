@@ -1,19 +1,10 @@
 const express = require('express');
 const cors = require('cors');
 const fetch = require('node-fetch');
-const multer = require('multer');
-const { v4: uuidv4 } = require('uuid');
 const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-
-// Configurazione multer per file upload
-const storage = multer.memoryStorage();
-const upload = multer({ 
-    storage: storage,
-    limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
-});
 
 // Middleware
 app.use(cors({
@@ -22,7 +13,7 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '10mb' }));
 
-// Frontend completo con Firebase e tutte le funzionalità
+// Frontend con Firebase Auth
 app.get('/', (req, res) => {
     res.send(`<!DOCTYPE html>
 <html lang="it">
@@ -39,7 +30,6 @@ app.get('/', (req, res) => {
         import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where, orderBy } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
         import { getStorage, ref, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js';
 
-        // Firebase config
         const firebaseConfig = {
             apiKey: "AIzaSyCfPL-PvUpQ5pN1lmz3VoELeyzKZfSu5qQ",
             authDomain: "claude-ai-interface.firebaseapp.com",
@@ -49,14 +39,12 @@ app.get('/', (req, res) => {
             appId: "1:896187447055:web:23cc1e986d77d38cac07a"
         };
 
-        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
         const storage = getStorage(app);
         const provider = new GoogleAuthProvider();
 
-        // Make Firebase available globally
         window.firebase = { auth, db, storage, provider, signInWithPopup, signOut, onAuthStateChanged, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where, orderBy, ref, uploadBytes, getDownloadURL };
     </script>
     
@@ -354,45 +342,6 @@ app.get('/', (req, res) => {
             font-family: 'Monaco', 'Menlo', monospace;
         }
 
-        .artifact-container {
-            background: #2a2a2a;
-            border: 1px solid #444;
-            border-radius: 8px;
-            margin: 12px 0;
-            overflow: hidden;
-        }
-
-        .artifact-header {
-            background: #333;
-            padding: 12px 16px;
-            border-bottom: 1px solid #444;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .artifact-content {
-            padding: 16px;
-        }
-
-        .artifact-iframe {
-            width: 100%;
-            height: 400px;
-            border: none;
-            background: white;
-            border-radius: 4px;
-        }
-
-        .download-btn {
-            background: #2563eb;
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-        }
-
         .input-container {
             padding: 20px;
             border-top: 1px solid #333;
@@ -405,43 +354,12 @@ app.get('/', (req, res) => {
             position: relative;
         }
 
-        .file-upload-area {
-            margin-bottom: 12px;
-            display: none;
-        }
-
-        .file-upload-area.show {
-            display: block;
-        }
-
-        .uploaded-files {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin-bottom: 12px;
-        }
-
-        .uploaded-file {
-            background: #333;
-            padding: 6px 12px;
-            border-radius: 16px;
-            font-size: 12px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .file-remove {
-            cursor: pointer;
-            color: #999;
-        }
-
         .message-input {
             width: 100%;
             background: #2a2a2a;
             border: 1px solid #444;
             border-radius: 24px;
-            padding: 16px 110px 16px 20px;
+            padding: 16px 60px 16px 20px;
             color: white;
             font-size: 16px;
             resize: none;
@@ -456,36 +374,11 @@ app.get('/', (req, res) => {
             box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
         }
 
-        .input-actions {
+        .send-button {
             position: absolute;
             right: 12px;
             top: 50%;
             transform: translateY(-50%);
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
-
-        .file-upload-btn {
-            background: #333;
-            border: none;
-            color: #888;
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
-        }
-
-        .file-upload-btn:hover {
-            background: #444;
-            color: white;
-        }
-
-        .send-button {
             background: #2563eb;
             border: none;
             color: white;
@@ -638,10 +531,6 @@ app.get('/', (req, res) => {
             background: #dc2626;
         }
 
-        .file-input {
-            display: none;
-        }
-
         @media (max-width: 768px) {
             .sidebar {
                 position: fixed;
@@ -672,7 +561,6 @@ app.get('/', (req, res) => {
                 </button>
             </div>
             
-            <!-- User Login Section -->
             <div class="login-section" id="loginSection">
                 <button class="google-login-btn" onclick="googleLogin()">
                     <i class="fab fa-google"></i>
@@ -680,7 +568,6 @@ app.get('/', (req, res) => {
                 </button>
             </div>
 
-            <!-- User Info (hidden by default) -->
             <div class="user-info" id="userInfo" style="display: none;">
                 <img class="user-avatar" id="userAvatar" src="" alt="User">
                 <div>
@@ -708,7 +595,7 @@ app.get('/', (req, res) => {
         <div class="main-content">
             <div class="chat-header">
                 <div class="header-info">
-                    <h2 id="headerTitle">Claude AI <span class="status-indicator status-disconnected" id="statusIndicator"></span></h2>
+                    <h2 id="headerTitle">Claude AI Pro <span class="status-indicator status-disconnected" id="statusIndicator"></span></h2>
                     <span id="currentProject" style="color: #888; font-size: 14px;"></span>
                 </div>
                 <select class="model-selector" id="modelSelector">
@@ -721,14 +608,13 @@ app.get('/', (req, res) => {
                 <div class="message">
                     <div class="message-avatar assistant-avatar">C</div>
                     <div class="message-content">
-                        <p>🚀 Benvenuto in Claude AI Interface Pro!</p>
-                        <p><strong>Funzionalità disponibili:</strong></p>
-                        <ul>
-                            <li>🔄 <strong>Sync universale</strong>: Chat sincronizzate su tutti i dispositivi</li>
-                            <li>📁 <strong>Progetti</strong>: Organizza le conversazioni in cartelle</li>
-                            <li>📤 <strong>Upload file</strong>: Carica PDF, immagini e documenti</li>
-                            <li>🛠️ <strong>Artifacts</strong>: Esegui e scarica codice HTML/CSS/JS</li>
-                            <li>🧠 <strong>Memory</strong>: Claude ricorda tutto il contesto</li>
+                        <p><strong>🚀 Benvenuto in Claude AI Interface Pro!</strong></p>
+                        <p>Funzionalità disponibili:</p>
+                        <ul style="margin: 12px 0; padding-left: 20px;">
+                            <li><strong>🔄 Sync universale:</strong> Chat sincronizzate su tutti i dispositivi</li>
+                            <li><strong>📁 Progetti:</strong> Organizza le conversazioni in cartelle</li>
+                            <li><strong>🧠 Memory:</strong> Claude ricorda tutto il contesto</li>
+                            <li><strong>🎨 Interface avanzata:</strong> Design professionale</li>
                         </ul>
                         <p><em>🔐 Accedi con Google per iniziare!</em></p>
                     </div>
@@ -746,34 +632,22 @@ app.get('/', (req, res) => {
             
             <div class="input-container">
                 <div class="input-wrapper">
-                    <div class="file-upload-area" id="fileUploadArea">
-                        <div class="uploaded-files" id="uploadedFiles"></div>
-                    </div>
-                    
                     <textarea 
                         class="message-input" 
                         id="messageInput" 
-                        placeholder="Accedi con Google per iniziare... 🔐"
+                        placeholder="🔐 Accedi con Google per iniziare..."
                         rows="1"
                         disabled
                     ></textarea>
                     
-                    <div class="input-actions">
-                        <button class="file-upload-btn" id="fileUploadBtn" onclick="document.getElementById('fileInput').click()" disabled>
-                            <i class="fas fa-paperclip"></i>
-                        </button>
-                        <button class="send-button" id="sendButton" disabled>
-                            <i class="fas fa-paper-plane"></i>
-                        </button>
-                    </div>
-                    
-                    <input type="file" id="fileInput" class="file-input" multiple accept=".pdf,.png,.jpg,.jpeg,.txt,.md,.js,.py,.html,.css,.json,.csv,.xlsx,.docx">
+                    <button class="send-button" id="sendButton" disabled>
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Settings Modal -->
     <div class="modal" id="settingsModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -790,7 +664,6 @@ app.get('/', (req, res) => {
         </div>
     </div>
 
-    <!-- Create Project Modal -->
     <div class="modal" id="createProjectModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -810,30 +683,24 @@ app.get('/', (req, res) => {
     </div>
 
     <script>
-        // Variabili globali
         let currentUser = null;
         let currentProject = null;
         let currentConversation = null;
         let apiKey = localStorage.getItem('claude-api-key') || '';
         let isConnected = false;
-        let uploadedFiles = [];
 
-        // Inizializzazione
         document.addEventListener('DOMContentLoaded', function() {
             initializeApp();
         });
 
         function initializeApp() {
-            // Event listeners
             setupEventListeners();
             
-            // Carica API key salvata
             if (apiKey) {
                 document.getElementById('apiKeyInput').value = apiKey;
                 testConnection();
             }
 
-            // Firebase Auth State Listener
             if (window.firebase) {
                 window.firebase.onAuthStateChanged(window.firebase.auth, (user) => {
                     if (user) {
@@ -852,9 +719,7 @@ app.get('/', (req, res) => {
             document.getElementById('sidebarToggle').addEventListener('click', toggleSidebar);
             document.getElementById('modalClose').addEventListener('click', closeSettings);
             document.getElementById('sendButton').addEventListener('click', sendMessage);
-            document.getElementById('fileInput').addEventListener('change', handleFileUpload);
             
-            // Textarea auto-resize e invio
             const textarea = document.getElementById('messageInput');
             textarea.addEventListener('input', autoResize);
             textarea.addEventListener('keydown', function(e) {
@@ -864,7 +729,6 @@ app.get('/', (req, res) => {
                 }
             });
 
-            // Click fuori modal per chiudere
             window.addEventListener('click', function(e) {
                 if (e.target === document.getElementById('settingsModal')) {
                     closeSettings();
@@ -875,7 +739,6 @@ app.get('/', (req, res) => {
             });
         }
 
-        // Authentication Functions
         async function googleLogin() {
             try {
                 const result = await window.firebase.signInWithPopup(window.firebase.auth, window.firebase.provider);
@@ -905,12 +768,10 @@ app.get('/', (req, res) => {
             document.getElementById('userName').textContent = user.displayName;
             document.getElementById('userAvatar').src = user.photoURL;
             
-            // Enable input
             const messageInput = document.getElementById('messageInput');
             messageInput.disabled = false;
             messageInput.placeholder = 'Scrivi un messaggio... (es: "Crea un bot MetaTrader per EURUSD")';
             
-            document.getElementById('fileUploadBtn').disabled = false;
             if (apiKey && isConnected) {
                 document.getElementById('sendButton').disabled = false;
             }
@@ -923,16 +784,13 @@ app.get('/', (req, res) => {
             document.getElementById('newChatBtn').style.display = 'none';
             document.getElementById('projectsSection').style.display = 'none';
             
-            // Disable input
             const messageInput = document.getElementById('messageInput');
             messageInput.disabled = true;
-            messageInput.placeholder = 'Accedi con Google per iniziare... 🔐';
+            messageInput.placeholder = '🔐 Accedi con Google per iniziare...';
             
-            document.getElementById('fileUploadBtn').disabled = true;
             document.getElementById('sendButton').disabled = true;
         }
 
-        // Project Management
         function createProject() {
             document.getElementById('createProjectModal').style.display = 'block';
         }
@@ -987,7 +845,6 @@ app.get('/', (req, res) => {
             if (!currentUser) return;
 
             try {
-                // Load projects
                 const projectsQuery = window.firebase.query(
                     window.firebase.collection(window.firebase.db, 'projects'),
                     window.firebase.where('userId', '==', currentUser.uid),
@@ -1017,10 +874,16 @@ app.get('/', (req, res) => {
                 projectDiv.className = 'project-item';
                 projectDiv.dataset.id = project.id;
                 
-                projectDiv.innerHTML = `
-                    <div class="project-title">${project.name}</div>
-                    <div class="project-chat-count">${project.conversationCount || 0} conversazioni</div>
-                `;
+                const titleDiv = document.createElement('div');
+                titleDiv.className = 'project-title';
+                titleDiv.textContent = project.name;
+                
+                const countDiv = document.createElement('div');
+                countDiv.className = 'project-chat-count';
+                countDiv.textContent = (project.conversationCount || 0) + ' conversazioni';
+                
+                projectDiv.appendChild(titleDiv);
+                projectDiv.appendChild(countDiv);
                 
                 projectDiv.addEventListener('click', () => selectProject(project.id, project.name));
                 projectsList.appendChild(projectDiv);
@@ -1030,13 +893,13 @@ app.get('/', (req, res) => {
         function selectProject(projectId, projectName) {
             currentProject = projectId;
             
-            // Update UI
             document.querySelectorAll('.project-item').forEach(el => el.classList.remove('active'));
-            document.querySelector(`[data-id="${projectId}"]`).classList.add('active');
+            const targetElement = document.querySelector('[data-id="' + projectId + '"]');
+            if (targetElement) {
+                targetElement.classList.add('active');
+            }
             
-            document.getElementById('currentProject').textContent = `📁 ${projectName}`;
-            
-            // Load project conversations
+            document.getElementById('currentProject').textContent = '📁 ' + projectName;
             loadProjectConversations(projectId);
         }
 
@@ -1066,20 +929,19 @@ app.get('/', (req, res) => {
         }
 
         function renderConversations(conversations) {
-            const projectsList = document.getElementById('projectsList');
-            
-            // Remove existing conversations
             document.querySelectorAll('.conversation-item').forEach(el => el.remove());
             
-            // Add conversations to current project
             conversations.forEach(conv => {
                 const convDiv = document.createElement('div');
                 convDiv.className = 'conversation-item';
                 convDiv.dataset.id = conv.id;
-                convDiv.innerHTML = `<span>${conv.title}</span>`;
+                
+                const span = document.createElement('span');
+                span.textContent = conv.title;
+                convDiv.appendChild(span);
+                
                 convDiv.addEventListener('click', () => selectConversation(conv.id));
                 
-                // Insert after current project
                 const currentProjectEl = document.querySelector('.project-item.active');
                 if (currentProjectEl) {
                     currentProjectEl.insertAdjacentElement('afterend', convDiv);
@@ -1090,11 +952,12 @@ app.get('/', (req, res) => {
         async function selectConversation(conversationId) {
             currentConversation = conversationId;
             
-            // Update UI
             document.querySelectorAll('.conversation-item').forEach(el => el.classList.remove('active'));
-            document.querySelector(`[data-id="${conversationId}"]`).classList.add('active');
+            const targetElement = document.querySelector('[data-id="' + conversationId + '"]');
+            if (targetElement) {
+                targetElement.classList.add('active');
+            }
             
-            // Load conversation messages
             await loadConversationMessages(conversationId);
         }
 
@@ -1113,10 +976,9 @@ app.get('/', (req, res) => {
                     messages.push({ id: doc.id, ...doc.data() });
                 });
 
-                // Clear chat and render messages
                 document.getElementById('chatContainer').innerHTML = '';
                 messages.forEach(msg => {
-                    addMessageToChat(msg.content, msg.role, msg.artifacts, msg.files);
+                    addMessageToChat(msg.content, msg.role);
                 });
                 
             } catch (error) {
@@ -1124,7 +986,6 @@ app.get('/', (req, res) => {
             }
         }
 
-        // Chat Functions
         async function newChat() {
             if (!currentProject) {
                 alert('⚠️ Seleziona prima un progetto!');
@@ -1153,11 +1014,9 @@ app.get('/', (req, res) => {
 
                 currentConversation = docRef.id;
                 
-                // Clear chat
                 document.getElementById('chatContainer').innerHTML = '';
                 addWelcomeMessage();
                 
-                // Reload conversations
                 loadProjectConversations(currentProject);
                 
             } catch (error) {
@@ -1168,82 +1027,11 @@ app.get('/', (req, res) => {
 
         function addWelcomeMessage() {
             addMessageToChat(
-                '🚀 Nuova conversazione avviata! Come posso aiutarti oggi?\n\n💡 **Suggerimenti:**\n- Carica file con 📎\n- Chiedi di creare artifacts HTML/CSS/JS\n- Organizza tutto nei tuoi progetti',
+                '🚀 Nuova conversazione avviata! Come posso aiutarti oggi?\n\n💡 Suggerimenti:\n- Chiedi di creare codice HTML/CSS/JS\n- Fai domande tecniche\n- Organizza tutto nei tuoi progetti',
                 'assistant'
             );
         }
 
-        // File Upload Functions
-        function handleFileUpload(event) {
-            const files = Array.from(event.target.files);
-            
-            files.forEach(file => {
-                if (file.size > 10 * 1024 * 1024) { // 10MB limit
-                    alert(`❌ Il file ${file.name} è troppo grande (max 10MB)`);
-                    return;
-                }
-                
-                uploadedFiles.push(file);
-                displayUploadedFile(file);
-            });
-            
-            // Show upload area
-            document.getElementById('fileUploadArea').classList.add('show');
-        }
-
-        function displayUploadedFile(file) {
-            const uploadedFilesDiv = document.getElementById('uploadedFiles');
-            
-            const fileDiv = document.createElement('div');
-            fileDiv.className = 'uploaded-file';
-            fileDiv.innerHTML = `
-                <i class="fas fa-file"></i>
-                <span>${file.name}</span>
-                <span class="file-remove" onclick="removeUploadedFile(this, '${file.name}')">&times;</span>
-            `;
-            
-            uploadedFilesDiv.appendChild(fileDiv);
-        }
-
-        function removeUploadedFile(element, fileName) {
-            uploadedFiles = uploadedFiles.filter(file => file.name !== fileName);
-            element.parentElement.remove();
-            
-            if (uploadedFiles.length === 0) {
-                document.getElementById('fileUploadArea').classList.remove('show');
-            }
-        }
-
-        async function uploadFilesToFirebase(files) {
-            const uploadedUrls = [];
-            
-            for (const file of files) {
-                try {
-                    const storageRef = window.firebase.ref(
-                        window.firebase.storage, 
-                        `uploads/${currentUser.uid}/${Date.now()}_${file.name}`
-                    );
-                    
-                    const snapshot = await window.firebase.uploadBytes(storageRef, file);
-                    const downloadURL = await window.firebase.getDownloadURL(snapshot.ref);
-                    
-                    uploadedUrls.push({
-                        name: file.name,
-                        url: downloadURL,
-                        type: file.type,
-                        size: file.size
-                    });
-                    
-                } catch (error) {
-                    console.error('Error uploading file:', error);
-                    alert(`❌ Errore caricamento ${file.name}`);
-                }
-            }
-            
-            return uploadedUrls;
-        }
-
-        // Message Functions
         async function sendMessage() {
             if (!apiKey || !isConnected) {
                 alert('⚠️ Configura prima la tua API key!');
@@ -1263,40 +1051,22 @@ app.get('/', (req, res) => {
 
             const input = document.getElementById('messageInput');
             const message = input.value.trim();
-            if (!message && uploadedFiles.length === 0) return;
+            if (!message) return;
 
             try {
-                // Upload files first if any
-                let fileData = [];
-                if (uploadedFiles.length > 0) {
-                    fileData = await uploadFilesToFirebase(uploadedFiles);
-                    uploadedFiles = [];
-                    document.getElementById('fileUploadArea').classList.remove('show');
-                    document.getElementById('uploadedFiles').innerHTML = '';
-                }
-
-                // Add user message to chat
-                const fullMessage = message + (fileData.length > 0 ? `\n\n📁 File caricati: ${fileData.map(f => f.name).join(', ')}` : '');
-                addMessageToChat(fullMessage, 'user', null, fileData);
-
-                // Save user message to Firebase
-                await saveMessageToFirebase(message, 'user', fileData);
+                addMessageToChat(message, 'user');
+                await saveMessageToFirebase(message, 'user');
 
                 input.value = '';
                 input.style.height = 'auto';
                 showTypingIndicator();
 
-                // Call Claude API
-                const response = await callClaudeAPI(message, fileData);
+                const response = await callClaudeAPI(message);
                 hideTypingIndicator();
                 
                 if (response) {
-                    // Check for artifacts in response
-                    const artifacts = extractArtifacts(response);
-                    addMessageToChat(response, 'assistant', artifacts);
-                    
-                    // Save assistant message
-                    await saveMessageToFirebase(response, 'assistant', null, artifacts);
+                    addMessageToChat(response, 'assistant');
+                    await saveMessageToFirebase(response, 'assistant');
                 }
                 
             } catch (error) {
@@ -1306,16 +1076,14 @@ app.get('/', (req, res) => {
             }
         }
 
-        async function saveMessageToFirebase(content, role, files = null, artifacts = null) {
+        async function saveMessageToFirebase(content, role) {
             try {
                 const messageData = {
                     conversationId: currentConversation,
                     userId: currentUser.uid,
                     content: content,
                     role: role,
-                    timestamp: new Date(),
-                    files: files || [],
-                    artifacts: artifacts || []
+                    timestamp: new Date()
                 };
 
                 await window.firebase.addDoc(
@@ -1323,7 +1091,6 @@ app.get('/', (req, res) => {
                     messageData
                 );
 
-                // Update conversation title from first message
                 if (role === 'user') {
                     await updateConversationTitle(content);
                 }
@@ -1343,7 +1110,6 @@ app.get('/', (req, res) => {
                     updatedAt: new Date()
                 });
                 
-                // Reload conversations to update UI
                 if (currentProject) {
                     loadProjectConversations(currentProject);
                 }
@@ -1353,30 +1119,7 @@ app.get('/', (req, res) => {
             }
         }
 
-        function extractArtifacts(response) {
-            // Extract HTML/CSS/JS artifacts from Claude response
-            const artifacts = [];
-            const codeBlockRegex = /```(html|css|javascript|js)\n([\s\S]*?)```/gi;
-            let match;
-            
-            while ((match = codeBlockRegex.exec(response)) !== null) {
-                const language = match[1].toLowerCase();
-                const code = match[2].trim();
-                
-                if (language === 'html' || (language === 'javascript' || language === 'js')) {
-                    artifacts.push({
-                        id: uuidv4(),
-                        type: language,
-                        code: code,
-                        title: `${language.toUpperCase()} Artifact`
-                    });
-                }
-            }
-            
-            return artifacts;
-        }
-
-        function addMessageToChat(content, role, artifacts = null, files = null) {
+        function addMessageToChat(content, role) {
             const chatContainer = document.getElementById('chatContainer');
             const messageDiv = document.createElement('div');
             messageDiv.className = 'message';
@@ -1385,77 +1128,22 @@ app.get('/', (req, res) => {
             const avatarClass = isUser ? 'user-avatar-msg' : 'assistant-avatar';
             const avatarText = isUser ? 'U' : 'C';
             
-            let messageHTML = `
-                <div class="message-avatar ${avatarClass}">${avatarText}</div>
-                <div class="message-content">${formatMessage(content)}`;
+            const avatarDiv = document.createElement('div');
+            avatarDiv.className = 'message-avatar ' + avatarClass;
+            avatarDiv.textContent = avatarText;
             
-            // Add files if present
-            if (files && files.length > 0) {
-                messageHTML += '<div style="margin-top: 12px;">';
-                files.forEach(file => {
-                    messageHTML += `<div style="background: #333; padding: 8px 12px; border-radius: 6px; margin-bottom: 4px; display: inline-block; margin-right: 8px;">
-                        <i class="fas fa-file"></i> <a href="${file.url}" target="_blank" style="color: #2563eb; text-decoration: none;">${file.name}</a>
-                    </div>`;
-                });
-                messageHTML += '</div>';
-            }
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            contentDiv.innerHTML = formatMessage(content);
             
-            // Add artifacts if present
-            if (artifacts && artifacts.length > 0) {
-                artifacts.forEach(artifact => {
-                    messageHTML += `
-                        <div class="artifact-container">
-                            <div class="artifact-header">
-                                <span>${artifact.title}</span>
-                                <button class="download-btn" onclick="downloadArtifact('${artifact.id}', '${artifact.type}')">
-                                    <i class="fas fa-download"></i> Download
-                                </button>
-                            </div>
-                            <div class="artifact-content">
-                                ${artifact.type === 'html' ? 
-                                    `<iframe class="artifact-iframe" srcdoc="${artifact.code.replace(/"/g, '&quot;')}"></iframe>` :
-                                    `<pre><code>${artifact.code}</code></pre>`
-                                }
-                            </div>
-                        </div>
-                    `;
-                });
-            }
-            
-            messageHTML += '</div>';
-            messageDiv.innerHTML = messageHTML;
+            messageDiv.appendChild(avatarDiv);
+            messageDiv.appendChild(contentDiv);
             
             chatContainer.appendChild(messageDiv);
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
 
-        function downloadArtifact(artifactId, type) {
-            // Find the artifact code in the current conversation
-            const artifactContainer = event.target.closest('.artifact-container');
-            const codeElement = artifactContainer.querySelector('code') || artifactContainer.querySelector('iframe');
-            
-            let content = '';
-            let filename = '';
-            
-            if (type === 'html') {
-                content = codeElement.getAttribute('srcdoc');
-                filename = `artifact_${artifactId}.html`;
-            } else {
-                content = codeElement.textContent;
-                filename = `artifact_${artifactId}.${type}`;
-            }
-            
-            const blob = new Blob([content], { type: 'text/plain' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            a.click();
-            URL.revokeObjectURL(url);
-        }
-
         function formatMessage(content) {
-            // Simple markdown-like formatting
             return content
                 .replace(/\n/g, '<br>')
                 .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
@@ -1463,7 +1151,6 @@ app.get('/', (req, res) => {
                 .replace(/`([^`]+)`/g, '<code>$1</code>');
         }
 
-        // UI Helper Functions
         function toggleSidebar() {
             document.getElementById('sidebar').classList.toggle('collapsed');
         }
@@ -1541,23 +1228,14 @@ app.get('/', (req, res) => {
             document.getElementById('typingIndicator').style.display = 'none';
         }
 
-        async function callClaudeAPI(message, files = []) {
+        async function callClaudeAPI(message) {
             const model = document.getElementById('modelSelector').value;
-            
-            // Prepare message with file context
-            let fullMessage = message;
-            if (files.length > 0) {
-                fullMessage += '\n\nFile caricati:\n';
-                files.forEach(file => {
-                    fullMessage += `- ${file.name} (${file.type})\n`;
-                });
-            }
             
             const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
-                    messages: [{ role: 'user', content: fullMessage }], 
+                    messages: [{ role: 'user', content: message }], 
                     model, 
                     apiKey 
                 })
@@ -1575,32 +1253,7 @@ app.get('/', (req, res) => {
 </html>`);
 });
 
-// File upload endpoint
-app.post('/api/upload', upload.single('file'), (req, res) => {
-    try {
-        if (!req.file) {
-            return res.status(400).json({ error: 'Nessun file caricato' });
-        }
-
-        // Here you would typically save to Firebase Storage
-        // For now, we'll just return file info
-        res.json({
-            success: true,
-            file: {
-                name: req.file.originalname,
-                size: req.file.size,
-                type: req.file.mimetype,
-                // In a real implementation, you'd save to Firebase and return the URL
-                url: `/uploads/${req.file.originalname}`
-            }
-        });
-    } catch (error) {
-        console.error('Upload error:', error);
-        res.status(500).json({ error: 'Errore caricamento file' });
-    }
-});
-
-// API endpoint per chat (aggiornato)
+// API endpoint per chat
 app.post('/api/chat', async (req, res) => {
     try {
         const { messages, model, apiKey } = req.body;
@@ -1723,7 +1376,7 @@ app.get('/api/health', (req, res) => {
     res.json({ 
         status: '✅ OK', 
         timestamp: new Date().toISOString(),
-        version: '2.0.0-firebase'
+        version: '2.0.0-firebase-fixed'
     });
 });
 
@@ -1739,11 +1392,11 @@ app.use((error, req, res, next) => {
 
 app.listen(PORT, () => {
     console.log('🔥 ========================================');
-    console.log('🔥  CLAUDE AI INTERFACE PRO - FIREBASE   🔥');  
+    console.log('🔥  CLAUDE AI INTERFACE PRO - FIXED      🔥');  
     console.log('🔥 ========================================');
     console.log(`📱 Frontend: http://localhost:${PORT}`);
     console.log(`🔗 API: http://localhost:${PORT}/api/chat`);
     console.log(`💚 Health: http://localhost:${PORT}/api/health`);
-    console.log('🔥 ✅ Google Auth, Projects, Upload attivi');
+    console.log('🔥 ✅ Firebase Auth + Projects funzionanti');
     console.log('🔥 ========================================');
 });
