@@ -256,7 +256,7 @@ app.get('/', (req, res) => {
                 const { error } = await window.supabase.auth.signInWithOAuth({
                     provider: 'google',
                     options: {
-                        redirectTo: window.location.origin
+                        redirectTo: 'https://claude-ai-interface-production.up.railway.app'
                     }
                 });
                 
