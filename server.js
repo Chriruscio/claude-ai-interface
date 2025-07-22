@@ -21,27 +21,12 @@ app.get('/', (req, res) => {
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
     <script type="module">
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
-        import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
-        import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where, orderBy } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyB-upKfPVITJrLJLt6YTNBRAQsyP663jRI",
-            authDomain: "claude-ai-interface.firebaseapp.com",
-            projectId: "claude-ai-interface",
-            storageBucket: "claude-ai-interface.firebasestorage.app",
-            messagingSenderId: "896187447055",
-            appId: "1:896187447055:web:a86e16d8f54c0eacf07a"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        window.firebase = { 
-            auth: getAuth(app), 
-            db: getFirestore(app), 
-            provider: new GoogleAuthProvider(),
-            signInWithPopup, signOut, onAuthStateChanged, 
-            collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where, orderBy 
-        };
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+        
+        const supabaseUrl = 'https://rxfnuxhwuigmtdysfhnb.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ4Zm51eGh3dWlnbXRkeXNmaG5iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzc1NDQ4MzEsImV4cCI6MjA1MzEyMDgzMX0.u-eXqc-l6v7vCHsVVKlK8J1wTfhuwS6RGNrCTNH82RM';
+        
+        window.supabase = createClient(supabaseUrl, supabaseKey);
     </script>
     
     <style>
@@ -231,24 +216,24 @@ app.get('/', (req, res) => {
             initializeApp();
         });
 
-        function initializeApp() {
+        async function initializeApp() {
             setupEventListeners();
             if (apiKey) {
                 document.getElementById('apiKeyInput').value = apiKey;
                 testConnection();
             }
-            if (window.firebase) {
-                window.firebase.onAuthStateChanged(window.firebase.auth, (user) => {
-                    if (user) {
-                        currentUser = user;
-                        showUserInterface(user);
-                        loadUserData();
-                    } else {
-                        currentUser = null;
-                        showLoginInterface();
-                    }
-                });
-            }
+            
+            // Listen for auth changes
+            window.supabase.auth.onAuthStateChange((event, session) => {
+                if (session?.user) {
+                    currentUser = session.user;
+                    showUserInterface(session.user);
+                    loadUserData();
+                } else {
+                    currentUser = null;
+                    showLoginInterface();
+                }
+            });
         }
 
         function setupEventListeners() {
@@ -268,18 +253,28 @@ app.get('/', (req, res) => {
 
         async function googleLogin() {
             try {
-                const result = await window.firebase.signInWithPopup(window.firebase.auth, window.firebase.provider);
-                console.log('Login successful');
+                const { error } = await window.supabase.auth.signInWithOAuth({
+                    provider: 'google',
+                    options: {
+                        redirectTo: window.location.origin
+                    }
+                });
+                
+                if (error) {
+                    alert('❌ Errore nel login: ' + error.message);
+                    console.error('Login error:', error);
+                }
             } catch (error) {
                 alert('❌ Errore nel login');
+                console.error('Login error:', error);
             }
         }
 
         async function logoutUser() {
             try {
-                await window.firebase.signOut(window.firebase.auth);
+                await window.supabase.auth.signOut();
             } catch (error) {
-                console.error('Logout error');
+                console.error('Logout error:', error);
             }
         }
 
@@ -290,8 +285,8 @@ app.get('/', (req, res) => {
             document.getElementById('newChatBtn').style.display = 'flex';
             document.getElementById('projectsSection').style.display = 'block';
             
-            document.getElementById('userName').textContent = user.displayName;
-            document.getElementById('userAvatar').src = user.photoURL;
+            document.getElementById('userName').textContent = user.user_metadata?.full_name || user.email;
+            document.getElementById('userAvatar').src = user.user_metadata?.picture || user.user_metadata?.avatar_url || '';
             
             const messageInput = document.getElementById('messageInput');
             messageInput.disabled = false;
@@ -334,22 +329,28 @@ app.get('/', (req, res) => {
             }
 
             try {
-                const projectData = {
-                    name: name,
-                    userId: currentUser.uid,
-                    createdAt: new Date(),
-                    updatedAt: new Date()
-                };
+                const { data, error } = await window.supabase
+                    .from('projects')
+                    .insert([
+                        {
+                            name: name,
+                            user_id: currentUser.id,
+                            created_at: new Date().toISOString(),
+                            updated_at: new Date().toISOString()
+                        }
+                    ]);
 
-                await window.firebase.addDoc(
-                    window.firebase.collection(window.firebase.db, 'projects'), 
-                    projectData
-                );
+                if (error) {
+                    console.error('Error creating project:', error);
+                    alert('❌ Errore nella creazione del progetto');
+                    return;
+                }
 
                 closeCreateProject();
                 loadUserData();
                 
             } catch (error) {
+                console.error('Error creating project:', error);
                 alert('❌ Errore nella creazione del progetto');
             }
         }
@@ -358,23 +359,21 @@ app.get('/', (req, res) => {
             if (!currentUser) return;
 
             try {
-                const projectsQuery = window.firebase.query(
-                    window.firebase.collection(window.firebase.db, 'projects'),
-                    window.firebase.where('userId', '==', currentUser.uid),
-                    window.firebase.orderBy('updatedAt', 'desc')
-                );
-                
-                const projectsSnapshot = await window.firebase.getDocs(projectsQuery);
-                const projects = [];
-                
-                projectsSnapshot.forEach((doc) => {
-                    projects.push({ id: doc.id, ...doc.data() });
-                });
+                const { data: projects, error } = await window.supabase
+                    .from('projects')
+                    .select('*')
+                    .eq('user_id', currentUser.id)
+                    .order('updated_at', { ascending: false });
 
-                renderProjects(projects);
+                if (error) {
+                    console.error('Error loading projects:', error);
+                    return;
+                }
+
+                renderProjects(projects || []);
                 
             } catch (error) {
-                console.error('Error loading data');
+                console.error('Error loading data:', error);
             }
         }
 
@@ -427,25 +426,33 @@ app.get('/', (req, res) => {
             }
 
             try {
-                const conversationData = {
-                    title: 'Nuova conversazione',
-                    userId: currentUser.uid,
-                    projectId: currentProject,
-                    createdAt: new Date(),
-                    updatedAt: new Date()
-                };
+                const { data, error } = await window.supabase
+                    .from('conversations')
+                    .insert([
+                        {
+                            title: 'Nuova conversazione',
+                            user_id: currentUser.id,
+                            project_id: currentProject,
+                            created_at: new Date().toISOString(),
+                            updated_at: new Date().toISOString()
+                        }
+                    ])
+                    .select()
+                    .single();
 
-                const docRef = await window.firebase.addDoc(
-                    window.firebase.collection(window.firebase.db, 'conversations'), 
-                    conversationData
-                );
+                if (error) {
+                    console.error('Error creating conversation:', error);
+                    alert('❌ Errore nella creazione della chat');
+                    return;
+                }
 
-                currentConversation = docRef.id;
+                currentConversation = data.id;
                 
                 document.getElementById('chatContainer').innerHTML = '';
                 addMessageToChat('🚀 Nuova conversazione avviata! Come posso aiutarti?', 'assistant');
                 
             } catch (error) {
+                console.error('Error creating chat:', error);
                 alert('❌ Errore nella creazione della chat');
             }
         }
@@ -477,11 +484,45 @@ app.get('/', (req, res) => {
                 
                 if (response) {
                     addMessageToChat(response, 'assistant');
+                    
+                    // Save messages to database
+                    await saveMessages(message, response);
                 }
                 
             } catch (error) {
                 hideTypingIndicator();
                 addMessageToChat('❌ Errore nella comunicazione con Claude.', 'assistant');
+            }
+        }
+
+        async function saveMessages(userMessage, assistantMessage) {
+            if (!currentConversation || !currentUser) return;
+
+            try {
+                const { error } = await window.supabase
+                    .from('messages')
+                    .insert([
+                        {
+                            conversation_id: currentConversation,
+                            user_id: currentUser.id,
+                            role: 'user',
+                            content: userMessage,
+                            created_at: new Date().toISOString()
+                        },
+                        {
+                            conversation_id: currentConversation,
+                            user_id: currentUser.id,
+                            role: 'assistant',
+                            content: assistantMessage,
+                            created_at: new Date().toISOString()
+                        }
+                    ]);
+
+                if (error) {
+                    console.error('Error saving messages:', error);
+                }
+            } catch (error) {
+                console.error('Error saving messages:', error);
             }
         }
 
@@ -610,11 +651,32 @@ app.get('/', (req, res) => {
             const data = await response.json();
             return data.content;
         }
+
+        // Initialize database tables on first load
+        async function initializeTables() {
+            try {
+                // Create projects table if not exists
+                const { error: projectsError } = await window.supabase.rpc('create_projects_table');
+                
+                // Create conversations table if not exists  
+                const { error: conversationsError } = await window.supabase.rpc('create_conversations_table');
+                
+                // Create messages table if not exists
+                const { error: messagesError } = await window.supabase.rpc('create_messages_table');
+                
+            } catch (error) {
+                console.log('Tables might already exist or RPC not available:', error);
+            }
+        }
+
+        // Call initialize tables on app start
+        initializeTables();
     </script>
 </body>
 </html>`);
 });
 
+// Chat API endpoint - same as before
 app.post('/api/chat', async (req, res) => {
     try {
         const { messages, model, apiKey } = req.body;
@@ -675,6 +737,7 @@ app.post('/api/chat', async (req, res) => {
     }
 });
 
+// Test API endpoint - same as before
 app.post('/api/test', async (req, res) => {
     try {
         const { apiKey } = req.body;
@@ -723,7 +786,7 @@ app.get('/api/health', (req, res) => {
     res.json({ 
         status: '✅ OK', 
         timestamp: new Date().toISOString(),
-        version: '5.0.0-complete-final'
+        version: '6.0.0-supabase-complete'
     });
 });
 
@@ -738,13 +801,13 @@ app.use((error, req, res, next) => {
 
 app.listen(PORT, () => {
     console.log('🚀 ==========================================');
-    console.log('🚀  CLAUDE AI INTERFACE PRO - COMPLETE    🚀');
+    console.log('🚀  CLAUDE AI INTERFACE PRO - SUPABASE    🚀');
     console.log('🚀 ==========================================');
     console.log(`📱 Frontend: http://localhost:${PORT}`);
     console.log(`🔗 API Chat: http://localhost:${PORT}/api/chat`);
     console.log(`🧪 API Test: http://localhost:${PORT}/api/test`);
     console.log(`💚 Health: http://localhost:${PORT}/api/health`);
-    console.log('🔥 ✅ Firebase Auth + Projects + Chat completi');
-    console.log('🔥 ✅ Zero syntax errors guaranteed!');
+    console.log('🔥 ✅ Supabase Auth + Google OAuth completi');
+    console.log('🔥 ✅ Database integrato per progetti/chat');
     console.log('🚀 ==========================================');
 });
