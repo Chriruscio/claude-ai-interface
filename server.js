@@ -522,15 +522,7 @@ app.get('/', (req, res) => {
             try {
                 const { data: projects, error } = await window.supabase
                     .from('projects')
-                    .select(\`
-                        *,
-                        conversations!inner(
-                            id,
-                            title,
-                            created_at,
-                            updated_at
-                        )
-                    \`)
+                    .select('*, conversations(id, title, created_at, updated_at)')
                     .eq('user_id', currentUser.id)
                     .order('updated_at', { ascending: false });
 
