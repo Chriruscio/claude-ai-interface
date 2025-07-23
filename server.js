@@ -166,11 +166,11 @@ app.get('/', (req, res) => {
         <div class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <button class="sidebar-toggle" id="sidebarToggle"><i class="fas fa-bars"></i></button>
-                <button class="settings-btn" onclick="openSettings()"><i class="fas fa-cog"></i></button>
+                <button class="settings-btn" id="settingsBtn"><i class="fas fa-cog"></i></button>
             </div>
             
             <div class="login-section" id="loginSection">
-                <button class="google-login-btn" onclick="googleLogin()">
+                <button class="google-login-btn" id="googleLoginBtn">
                     <i class="fab fa-google"></i><span>Accedi con Google</span>
                 </button>
             </div>
@@ -179,11 +179,11 @@ app.get('/', (req, res) => {
                 <img class="user-avatar" id="userAvatar" src="" alt="User">
                 <div>
                     <div id="userName" style="font-weight: 500;"></div>
-                    <button class="logout-btn" onclick="logoutUser()">Esci</button>
+                    <button class="logout-btn" id="logoutBtn">Esci</button>
                 </div>
             </div>
             
-            <button class="new-project-btn" onclick="createProject()" style="display: none;" id="newProjectBtn">
+            <button class="new-project-btn" style="display: none;" id="newProjectBtn">
                 <i class="fas fa-folder-plus"></i><span>Nuovo Progetto</span>
             </button>
             
@@ -261,8 +261,8 @@ app.get('/', (req, res) => {
                 <label class="form-label">🔑 API Key di Anthropic:</label>
                 <input type="password" class="form-input" id="apiKeyInput" placeholder="sk-ant-...">
             </div>
-            <button class="test-button" onclick="testConnection()">🧪 Test Connessione</button>
-            <button class="save-button" onclick="saveSettings()">💾 Salva</button>
+            <button class="test-button" id="testBtn">🧪 Test Connessione</button>
+            <button class="save-button" id="saveBtn">💾 Salva</button>
         </div>
     </div>
 
@@ -270,13 +270,13 @@ app.get('/', (req, res) => {
         <div class="modal-content">
             <div class="modal-header">
                 <h3>📁 Crea Nuovo Progetto</h3>
-                <button class="modal-close" onclick="closeCreateProject()">&times;</button>
+                <button class="modal-close" id="createProjectClose">&times;</button>
             </div>
             <div class="form-group">
                 <label class="form-label">Nome Progetto:</label>
                 <input type="text" class="form-input" id="projectNameInput" placeholder="es. Bot MetaTrader EURUSD">
             </div>
-            <button class="create-button" onclick="saveProject()">📁 Crea Progetto</button>
+            <button class="create-button" id="createProjectSaveBtn">📁 Crea Progetto</button>
         </div>
     </div>
 
@@ -316,6 +316,16 @@ app.get('/', (req, res) => {
             document.getElementById('sidebarToggle').addEventListener('click', toggleSidebar);
             document.getElementById('modalClose').addEventListener('click', closeSettings);
             document.getElementById('sendButton').addEventListener('click', sendMessage);
+            
+            // Nuovi event listeners
+            document.getElementById('googleLoginBtn').addEventListener('click', googleLogin);
+            document.getElementById('logoutBtn').addEventListener('click', logoutUser);
+            document.getElementById('settingsBtn').addEventListener('click', openSettings);
+            document.getElementById('newProjectBtn').addEventListener('click', createProject);
+            document.getElementById('testBtn').addEventListener('click', testConnection);
+            document.getElementById('saveBtn').addEventListener('click', saveSettings);
+            document.getElementById('createProjectClose').addEventListener('click', closeCreateProject);
+            document.getElementById('createProjectSaveBtn').addEventListener('click', saveProject);
             
             const textarea = document.getElementById('messageInput');
             textarea.addEventListener('input', autoResize);
@@ -612,7 +622,7 @@ app.get('/', (req, res) => {
 
         function showProjectWelcome(projectName) {
             const chatContainer = document.getElementById('chatContainer');
-            chatContainer.innerHTML = '<div class="welcome-screen" style="display: flex;"><h2>📁 Progetto: ' + projectName + '</h2><p>Crea una nuova chat per iniziare la conversazione!</p><br><button onclick="newChat()" style="background: #2563eb; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 14px;"><i class="fas fa-plus"></i> Nuova Chat</button></div>';
+            chatContainer.innerHTML = '<div class="welcome-screen" style="display: flex;"><h2>📁 Progetto: ' + projectName + '</h2>                    <p>Crea una nuova chat per iniziare la conversazione!</p><br><button onclick="newChat()" style="background: #2563eb; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 14px;"><i class="fas fa-plus"></i> Nuova Chat</button></div>';
         }
 
         async function selectChat(chatId, chatTitle) {
