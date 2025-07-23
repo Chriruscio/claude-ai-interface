@@ -26,64 +26,57 @@ app.get('/', (req, res) => {
         const supabaseUrl = 'https://rxfnuxhwuigmtdysfhnb.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ4Zm51eGh3dWlnbXRkeXNmaG5iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzc1NDQ4MzEsImV4cCI6MjA1MzEyMDgzMX0.u-eXqc-l6v7vCHsVVKlK8J1wTfhuwS6RGNrCTNH82RM';
         
-// SOSTITUISCI QUESTA SEZIONE nel tuo script (dopo la creazione del client Supabase):
 
 window.supabase = createClient(supabaseUrl, supabaseKey);
 
-// DEBUG: controlla se ci sono token nell'URL
+// GESTIONE FORZATA DEI TOKEN OAUTH
 if (window.location.hash.includes('access_token')) {
     console.log('Access token detected in URL');
     
-    // PROCESSA I TOKEN OAUTH DALL'URL
-    setTimeout(async () => {
-        try {
-            // Supabase dovrebbe processare automaticamente l'hash, ma forziamo il controllo
-            const { data, error } = await window.supabase.auth.getSession();
-            
+    // Estrai i token dall'URL IMMEDIATAMENTE
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const accessToken = hashParams.get('access_token');
+    const refreshToken = hashParams.get('refresh_token');
+    
+    if (accessToken && refreshToken) {
+        console.log('🔧 Forcing session with extracted tokens...');
+        
+        // FORZA il set della sessione SUBITO
+        window.supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken
+        }).then(({ data, error }) => {
             if (error) {
-                console.error('Error getting session after OAuth:', error);
-                
-                // Se getSession fallisce, prova a estrarre manualmente i token
-                const hashParams = new URLSearchParams(window.location.hash.substring(1));
-                const accessToken = hashParams.get('access_token');
-                const refreshToken = hashParams.get('refresh_token');
-                
-                if (accessToken && refreshToken) {
-                    console.log('Manually setting session with tokens...');
-                    const { data: sessionData, error: sessionError } = await window.supabase.auth.setSession({
-                        access_token: accessToken,
-                        refresh_token: refreshToken
-                    });
-                    
-                    if (sessionError) {
-                        console.error('Error setting session manually:', sessionError);
-                    } else if (sessionData?.session?.user) {
-                        console.log('Session set manually:', sessionData.session.user.email);
-                        window.history.replaceState({}, document.title, window.location.pathname);
-                        window.location.reload();
-                        return;
-                    }
-                }
+                console.error('❌ Error forcing session:', error);
             } else if (data?.session?.user) {
-                console.log('User found after delay:', data.session.user.email);
+                console.log('✅ Session forced successfully:', data.session.user.email);
+                // Pulisci l'URL
                 window.history.replaceState({}, document.title, window.location.pathname);
+                // Ricarica per attivare l'interfaccia
                 window.location.reload();
-                return;
+            } else {
+                console.log('❌ No user data in forced session');
             }
-            
-            console.log('No session found after 5 seconds');
-        } catch (error) {
-            console.error('Exception processing OAuth callback:', error);
+        }).catch(error => {
+            console.error('❌ Exception forcing session:', error);
+        });
+    }
+} else {
+    // Se non c'è callback OAuth, controlla sessione esistente
+    setTimeout(async () => {
+        const { data, error } = await window.supabase.auth.getSession();
+        if (data?.session?.user) {
+            console.log('✅ Existing session found:', data.session.user.email);
         }
-    }, 2000); // Ridotto a 2 secondi
+    }, 1000);
 }
 
-// Auth state listener (mantieni quello che hai)
+// Auth state listener
 window.supabase.auth.onAuthStateChange((event, session) => {
     console.log('Auth event:', event, session?.user?.email);
     if (event === 'SIGNED_IN' && session?.user) {
-        window.history.replaceState({}, document.title, window.location.pathname);
-        window.location.reload();
+        console.log('✅ Successfully signed in!');
+        // Non ricaricare qui per evitare loop
     }
 });
 
