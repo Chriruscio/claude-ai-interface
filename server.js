@@ -1333,10 +1333,10 @@ app.get('/', (req, res) => {
             for (const file of uploadedFiles) {
                 try {
                     const text = await readFileAsText(file);
-                    contents += `[File: ${file.name}]\n${text}\n\n`;
+                    contents += '[File: ' + file.name + ']\\n' + text + '\\n\\n';
                 } catch (error) {
                     console.error('Error reading file:', error);
-                    contents += `[File: ${file.name}] - Errore nella lettura del file\n\n`;
+                    contents += '[File: ' + file.name + '] - Errore nella lettura del file\\n\\n';
                 }
             }
             
