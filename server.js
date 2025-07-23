@@ -1212,7 +1212,7 @@ app.get('/', (req, res) => {
                 el.classList.remove('active');
             });
             
-            const targetElement = document.querySelector(`[data-id="${projectId}"]`);
+            const targetElement = document.querySelector('[data-id="' + projectId + '"]');
             if (targetElement) {
                 targetElement.classList.add('active');
             }
