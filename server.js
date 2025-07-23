@@ -305,28 +305,43 @@ app.get('/', (req, res) => {
             
             // Handle OAuth callback
             const { data, error } = await window.supabase.auth.getSession();
-            if (data?.session) {
+            if (data?.session?.user) {
                 currentUser = data.session.user;
                 showUserInterface(data.session.user);
                 loadUserData();
             }
+            
+            // Listener per cambiamenti di auth state
+            window.supabase.auth.onAuthStateChange((event, session) => {
+                console.log('Auth state changed:', event, session?.user?.email);
+                if (event === 'SIGNED_IN' && session?.user) {
+                    currentUser = session.user;
+                    showUserInterface(session.user);
+                    loadUserData();
+                } else if (event === 'SIGNED_OUT') {
+                    showLoginInterface();
+                    resetApp();
+                }
+            });
         }
 
         function setupEventListeners() {
+            // Event listeners principali
             document.getElementById('sidebarToggle').addEventListener('click', toggleSidebar);
             document.getElementById('modalClose').addEventListener('click', closeSettings);
             document.getElementById('sendButton').addEventListener('click', sendMessage);
             
-            // Nuovi event listeners
+            // Event listeners per autenticazione e progetti
             document.getElementById('googleLoginBtn').addEventListener('click', googleLogin);
-            document.getElementById('logoutBtn').addEventListener('click', logoutUser);
             document.getElementById('settingsBtn').addEventListener('click', openSettings);
-            document.getElementById('newProjectBtn').addEventListener('click', createProject);
             document.getElementById('testBtn').addEventListener('click', testConnection);
             document.getElementById('saveBtn').addEventListener('click', saveSettings);
-            document.getElementById('createProjectClose').addEventListener('click', closeCreateProject);
             document.getElementById('createProjectSaveBtn').addEventListener('click', saveProject);
             
+            // Event listeners per i modal
+            document.getElementById('createProjectClose').addEventListener('click', closeCreateProject);
+            
+            // Event listener per textarea
             const textarea = document.getElementById('messageInput');
             textarea.addEventListener('input', autoResize);
             textarea.addEventListener('keydown', function(e) {
@@ -335,6 +350,19 @@ app.get('/', (req, res) => {
                     sendMessage();
                 }
             });
+            
+            // Event listeners che richiedono controllo di esistenza
+            setTimeout(() => {
+                const logoutBtn = document.getElementById('logoutBtn');
+                const newProjectBtn = document.getElementById('newProjectBtn');
+                
+                if (logoutBtn) {
+                    logoutBtn.addEventListener('click', logoutUser);
+                }
+                if (newProjectBtn) {
+                    newProjectBtn.addEventListener('click', createProject);
+                }
+            }, 100);
         }
 
         async function googleLogin() {
@@ -395,6 +423,21 @@ app.get('/', (req, res) => {
             }
             
             hideWelcomeScreen();
+            
+            // Riattiva event listeners per elementi ora visibili
+            setTimeout(() => {
+                const logoutBtn = document.getElementById('logoutBtn');
+                const newProjectBtn = document.getElementById('newProjectBtn');
+                
+                if (logoutBtn && !logoutBtn.hasAttribute('data-listener')) {
+                    logoutBtn.addEventListener('click', logoutUser);
+                    logoutBtn.setAttribute('data-listener', 'true');
+                }
+                if (newProjectBtn && !newProjectBtn.hasAttribute('data-listener')) {
+                    newProjectBtn.addEventListener('click', createProject);
+                    newProjectBtn.setAttribute('data-listener', 'true');
+                }
+            }, 50);
         }
 
         function showLoginInterface() {
