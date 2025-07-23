@@ -665,7 +665,15 @@ app.get('/', (req, res) => {
 
         function showProjectWelcome(projectName) {
             const chatContainer = document.getElementById('chatContainer');
-            chatContainer.innerHTML = '<div class="welcome-screen" style="display: flex;"><h2>📁 Progetto: ' + projectName + '</h2>                    <p>Crea una nuova chat per iniziare la conversazione!</p><br><button onclick="newChat()" style="background: #2563eb; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 14px;"><i class="fas fa-plus"></i> Nuova Chat</button></div>';
+            chatContainer.innerHTML = '<div class="welcome-screen" style="display: flex;"><h2>📁 Progetto: ' + projectName + '</h2><p>Crea una nuova chat per iniziare la conversazione!</p><br><button id="tempNewChatBtn" style="background: #2563eb; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 14px;"><i class="fas fa-plus"></i> Nuova Chat</button></div>';
+            
+            // Aggiungi event listener al bottone temporaneo
+            setTimeout(() => {
+                const tempBtn = document.getElementById('tempNewChatBtn');
+                if (tempBtn) {
+                    tempBtn.addEventListener('click', newChat);
+                }
+            }, 50);
         }
 
         async function selectChat(chatId, chatTitle) {
