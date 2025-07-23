@@ -26,9 +26,21 @@ app.get('/', (req, res) => {
         const supabaseUrl = 'https://rxfnuxhwuigmtdysfhnb.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ4Zm51eGh3dWlnbXRkeXNmaG5iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzc1NDQ4MzEsImV4cCI6MjA1MzEyMDgzMX0.u-eXqc-l6v7vCHsVVKlK8J1wTfhuwS6RGNrCTNH82RM';
         
-        window.supabase = createClient(supabaseUrl, supabaseKey);
-// Handle OAuth callback properly
+window.supabase = createClient(supabaseUrl, supabaseKey);
+
+// Handle OAuth callback with delay
+setTimeout(async () => {
+    const { data, error } = await window.supabase.auth.getSession();
+    if (data?.session?.user) {
+        console.log('User found after delay:', data.session.user.email);
+        window.history.replaceState({}, document.title, window.location.pathname);
+        window.location.reload();
+    }
+}, 2000);
+
+// Also keep the auth state listener
 window.supabase.auth.onAuthStateChange((event, session) => {
+    console.log('Auth event:', event, session?.user?.email);
     if (event === 'SIGNED_IN' && session?.user) {
         window.history.replaceState({}, document.title, window.location.pathname);
         window.location.reload();
