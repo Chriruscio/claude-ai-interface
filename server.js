@@ -663,21 +663,21 @@ window.supabase.auth.onAuthStateChange((event, session) => {
                 
                 const projectHeader = document.createElement('div');
                 projectHeader.className = 'project-header';
-                projectHeader.innerHTML = \`
+                projectHeader.innerHTML = `
                     <div class="project-header-content">
                         <i class="fas fa-chevron-right project-arrow"></i>
                         <i class="fas fa-folder"></i>
-                        <span class="project-name">\${project.name}</span>
+                        <span class="project-name">${project.name}</span>
                     </div>
                     <div class="project-actions">
-                        <button class="project-action-btn" onclick="editProject('\${project.id}')" title="Modifica">
+                        <button class="project-action-btn" onclick="editProject('${project.id}')" title="Modifica">
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button class="project-action-btn" onclick="deleteProject('\${project.id}')" title="Elimina">
+                        <button class="project-action-btn" onclick="deleteProject('${project.id}')" title="Elimina">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
-                \`;
+                `;
                 
                 projectHeader.addEventListener('click', function(e) {
                     if (!e.target.closest('.project-actions')) {
@@ -695,10 +695,10 @@ window.supabase.auth.onAuthStateChange((event, session) => {
                         const chatItem = document.createElement('div');
                         chatItem.className = 'chat-item';
                         chatItem.dataset.conversationId = conv.id;
-                        chatItem.innerHTML = `
-                            <span class="chat-title">${conv.title || 'Chat senza titolo'}</span>
-                            <span class="chat-date">${new Date(conv.created_at).toLocaleDateString('it-IT')}</span>
-                        `;
+                        chatItem.innerHTML = \`
+                            <span class="chat-title">\${conv.title || 'Chat senza titolo'}</span>
+                            <span class="chat-date">\${new Date(conv.created_at).toLocaleDateString('it-IT')}</span>
+                        \`;
                         chatItem.addEventListener('click', () => loadConversation(conv.id, project.id, project.name));
                         projectChats.appendChild(chatItem);
                     });
@@ -707,10 +707,10 @@ window.supabase.auth.onAuthStateChange((event, session) => {
                 // Add new chat button
                 const addChatBtn = document.createElement('div');
                 addChatBtn.className = 'add-chat-btn';
-                addChatBtn.innerHTML = `
+                addChatBtn.innerHTML = \`
                     <i class="fas fa-plus"></i>
                     <span>Nuova chat</span>
-                `;
+                \`;
                 addChatBtn.addEventListener('click', () => createNewChat(project.id, project.name));
                 projectChats.appendChild(addChatBtn);
                 
@@ -721,8 +721,8 @@ window.supabase.auth.onAuthStateChange((event, session) => {
         }
 
         function toggleProjectChats(projectId) {
-            const projectChats = document.getElementById(`project-chats-${projectId}`);
-            const arrow = document.querySelector(`[data-project-id="${projectId}"] .project-arrow`);
+            const projectChats = document.getElementById(\`project-chats-\${projectId}\`);
+            const arrow = document.querySelector(\`[data-project-id="\${projectId}"] .project-arrow\`);
             
             if (projectChats.classList.contains('open')) {
                 projectChats.classList.remove('open');
@@ -776,8 +776,8 @@ window.supabase.auth.onAuthStateChange((event, session) => {
             
             // Update UI
             document.querySelectorAll('.chat-item').forEach(item => item.classList.remove('active'));
-            document.querySelector(`[data-conversation-id="${conversationId}"]`)?.classList.add('active');
-            document.getElementById('currentProject').textContent = `📁 ${projectName}`;
+            document.querySelector(\`[data-conversation-id="\${conversationId}"]\`)?.classList.add('active');
+            document.getElementById('currentProject').textContent = \`📁 \${projectName}\`;
             document.getElementById('fileUploadArea').style.display = 'block';
             
             // Load messages
@@ -876,15 +876,15 @@ window.supabase.auth.onAuthStateChange((event, session) => {
             files.forEach(file => {
                 const fileItem = document.createElement('div');
                 fileItem.className = 'file-item';
-                fileItem.innerHTML = `
+                fileItem.innerHTML = \`
                     <div class="file-name">
                         <i class="fas fa-file"></i>
-                        <span>${file.name}</span>
+                        <span>\${file.name}</span>
                     </div>
-                    <button class="file-remove" onclick="removeFile('${file.id}')">
+                    <button class="file-remove" onclick="removeFile('\${file.id}')">
                         <i class="fas fa-times"></i>
                     </button>
-                `;
+                \`;
                 fileList.appendChild(fileItem);
             });
         }
@@ -911,7 +911,7 @@ window.supabase.auth.onAuthStateChange((event, session) => {
             document.getElementById('creditRemaining').textContent = `${apiStats.creditRemaining.toFixed(2)}`;
             
             const usagePercent = (apiStats.tokensUsed / 1000000) * 100; // Assuming 1M token limit
-            document.getElementById('usageBar').style.width = `${Math.min(usagePercent, 100)}%`;
+            document.getElementById('usageBar').style.width = \`\${Math.min(usagePercent, 100)}%\`;
         }
 
         function updateTokenUsage(tokens) {
