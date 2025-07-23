@@ -60,155 +60,6 @@ if (window.location.hash.includes('access_token')) {
         }).catch(error => {
             console.error('❌ Exception forcing session:', error);
         });
-
-// Chat API endpoint - updated to return usage info
-app.post('/api/chat', async (req, res) => {
-    try {
-        const { messages, model, apiKey } = req.body;
-
-        if (!apiKey) {
-            return res.status(400).json({ error: 'API key richiesta' });
-        }
-
-        if (!messages || !Array.isArray(messages)) {
-            return res.status(400).json({ error: 'Array di messaggi richiesto' });
-        }
-
-        const validModels = ['claude-sonnet-4-20250514', 'claude-opus-4'];
-        const selectedModel = validModels.includes(model) ? model : 'claude-sonnet-4-20250514';
-
-        console.log('📤 Richiesta a Claude:', selectedModel);
-
-        const anthropicResponse = await fetch('https://api.anthropic.com/v1/messages', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': apiKey,
-                'anthropic-version': '2023-06-01'
-            },
-            body: JSON.stringify({
-                model: selectedModel,
-                max_tokens: 4000,
-                messages: messages,
-                temperature: 0.7
-            })
-        });
-
-        if (!anthropicResponse.ok) {
-            console.error('❌ Errore API Anthropic');
-            return res.status(anthropicResponse.status).json({ 
-                error: 'Errore chiamata API'
-            });
-        }
-
-        const data = await anthropicResponse.json();
-        
-        if (data.content && data.content[0] && data.content[0].text) {
-            console.log('✅ Risposta ricevuta da Claude');
-            
-            // Calculate approximate token usage
-            const inputTokens = JSON.stringify(messages).length / 4;
-            const outputTokens = data.content[0].text.length / 4;
-            const totalTokens = Math.round(inputTokens + outputTokens);
-            
-            res.json({ 
-                content: data.content[0].text,
-                model: selectedModel,
-                usage: {
-                    input_tokens: Math.round(inputTokens),
-                    output_tokens: Math.round(outputTokens),
-                    total_tokens: totalTokens
-                }
-            });
-        } else {
-            console.error('❌ Formato risposta inaspettato');
-            res.status(500).json({ error: 'Formato risposta inaspettato' });
-        }
-
-    } catch (error) {
-        console.error('❌ Errore server:', error);
-        res.status(500).json({ 
-            error: 'Errore interno del server'
-        });
-    }
-});
-
-// Test API endpoint - same as before
-app.post('/api/test', async (req, res) => {
-    try {
-        const { apiKey } = req.body;
-
-        if (!apiKey) {
-            return res.status(400).json({ success: false, error: 'API key richiesta' });
-        }
-
-        console.log('🧪 Test connessione API...');
-
-        const testResponse = await fetch('https://api.anthropic.com/v1/messages', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': apiKey,
-                'anthropic-version': '2023-06-01'
-            },
-            body: JSON.stringify({
-                model: 'claude-sonnet-4-20250514',
-                max_tokens: 20,
-                messages: [{ role: 'user', content: 'Test' }]
-            })
-        });
-
-        if (testResponse.ok) {
-            console.log('✅ Test API riuscito');
-            res.json({ success: true, message: 'API key valida!' });
-        } else {
-            console.log('❌ Test API fallito');
-            res.status(testResponse.status).json({ 
-                success: false, 
-                error: 'API key non valida'
-            });
-        }
-
-    } catch (error) {
-        console.error('❌ Errore test API:', error);
-        res.status(500).json({ 
-            success: false, 
-            error: 'Errore nel test API'
-        });
-    }
-});
-
-app.get('/api/health', (req, res) => {
-    res.json({ 
-        status: '✅ OK', 
-        timestamp: new Date().toISOString(),
-        version: '7.0.0-enhanced-features'
-    });
-});
-
-app.use((req, res) => {
-    res.status(404).json({ error: '❌ Endpoint non trovato' });
-});
-
-app.use((error, req, res, next) => {
-    console.error('❌ Errore non gestito:', error);
-    res.status(500).json({ error: 'Errore interno del server' });
-});
-
-app.listen(PORT, () => {
-    console.log('🚀 ==========================================');
-    console.log('🚀  CLAUDE AI INTERFACE PRO - ENHANCED    🚀');
-    console.log('🚀 ==========================================');
-    console.log(`📱 Frontend: http://localhost:${PORT}`);
-    console.log(`🔗 API Chat: http://localhost:${PORT}/api/chat`);
-    console.log(`🧪 API Test: http://localhost:${PORT}/api/test`);
-    console.log(`💚 Health: http://localhost:${PORT}/api/health`);
-    console.log('🔥 ✅ Interfaccia progetti stile Claude');
-    console.log('🔥 ✅ Chat multiple per progetto');
-    console.log('🔥 ✅ Gestione file per progetto');
-    console.log('🔥 ✅ Statistiche API e token');
-    console.log('🚀 ==========================================');
-});
     }
 } else {
     // Se non c'è callback OAuth, controlla sessione esistente
@@ -249,49 +100,13 @@ window.supabase.auth.onAuthStateChange((event, session) => {
         .new-project-btn { background: #16a34a; }
         .new-chat-btn:hover { background: #1d4ed8; }
         .new-project-btn:hover { background: #15803d; }
-        
-        /* Nuovi stili per progetti stile Claude */
-        .projects-section { flex: 1; overflow-y: auto; padding: 0; }
-        .project-group { margin-bottom: 20px; }
-        .project-header { padding: 12px 16px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; transition: all 0.2s; }
-        .project-header:hover { background: #333; }
-        .project-header-content { display: flex; align-items: center; gap: 8px; flex: 1; }
-        .project-arrow { transition: transform 0.2s; color: #888; }
-        .project-arrow.open { transform: rotate(90deg); }
-        .project-name { font-weight: 500; font-size: 14px; }
-        .project-actions { display: flex; gap: 8px; opacity: 0; transition: opacity 0.2s; }
-        .project-header:hover .project-actions { opacity: 1; }
-        .project-action-btn { background: none; border: none; color: #888; cursor: pointer; padding: 4px; border-radius: 4px; transition: all 0.2s; }
-        .project-action-btn:hover { background: #444; color: #fff; }
-        .project-chats { display: none; background: #0f0f0f; }
-        .project-chats.open { display: block; }
-        .chat-item { padding: 8px 16px 8px 40px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; transition: all 0.2s; font-size: 13px; }
-        .chat-item:hover { background: #333; }
-        .chat-item.active { background: #2563eb; }
-        .chat-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .chat-date { font-size: 11px; color: #888; }
-        .add-chat-btn { padding: 8px 16px 8px 40px; color: #888; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 8px; transition: all 0.2s; }
-        .add-chat-btn:hover { color: #fff; background: #333; }
-        
-        /* Stats section */
-        .stats-section { padding: 16px; border-top: 1px solid #333; background: #0f0f0f; }
-        .stats-title { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
-        .stat-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 13px; }
-        .stat-label { color: #888; }
-        .stat-value { font-weight: 500; }
-        .stat-bar { height: 4px; background: #333; border-radius: 2px; margin-top: 4px; overflow: hidden; }
-        .stat-bar-fill { height: 100%; background: #2563eb; border-radius: 2px; transition: width 0.3s; }
-        
-        /* File upload area */
-        .file-upload-area { padding: 16px 20px; border-top: 1px solid #333; background: #0f0f0f; }
-        .file-upload-btn { width: 100%; padding: 12px; border: 2px dashed #444; border-radius: 8px; background: none; color: #888; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s; }
-        .file-upload-btn:hover { border-color: #2563eb; color: #2563eb; }
-        .file-list { margin-top: 12px; }
-        .file-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; background: #1a1a1a; border-radius: 6px; margin-bottom: 4px; font-size: 13px; }
-        .file-name { display: flex; align-items: center; gap: 8px; flex: 1; }
-        .file-remove { background: none; border: none; color: #888; cursor: pointer; padding: 4px; }
-        .file-remove:hover { color: #dc2626; }
-        
+        .projects-section { flex: 1; overflow-y: auto; padding: 8px; }
+        .projects-header { padding: 8px 16px; font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
+        .project-item { padding: 12px 16px; border-radius: 8px; cursor: pointer; margin-bottom: 4px; transition: all 0.2s; font-size: 14px; }
+        .project-item:hover { background: #333; }
+        .project-item.active { background: #16a34a; }
+        .project-title { font-weight: 500; margin-bottom: 4px; }
+        .project-chat-count { font-size: 12px; color: #888; }
         .main-content { flex: 1; display: flex; flex-direction: column; background: #1a1a1a; }
         .chat-header { padding: 16px 24px; border-bottom: 1px solid #333; display: flex; align-items: center; justify-content: space-between; }
         .header-info { display: flex; align-items: center; gap: 16px; }
@@ -309,8 +124,6 @@ window.supabase.auth.onAuthStateChange((event, session) => {
         .send-button { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: #2563eb; border: none; color: white; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
         .send-button:hover { background: #1d4ed8; }
         .send-button:disabled { background: #444; cursor: not-allowed; }
-        
-        /* Modals */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); z-index: 1000; }
         .modal-content { background: #2a2a2a; margin: 5% auto; padding: 30px; border-radius: 12px; width: 90%; max-width: 500px; position: relative; }
         .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
@@ -322,7 +135,6 @@ window.supabase.auth.onAuthStateChange((event, session) => {
         .save-button, .test-button, .create-button { background: #2563eb; border: none; color: white; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; margin-right: 10px; }
         .test-button { background: #16a34a; }
         .create-button { background: #f59e0b; }
-        
         .typing-indicator { display: none; align-items: center; gap: 8px; margin-bottom: 24px; max-width: 1000px; margin-left: auto; margin-right: auto; }
         .typing-dots { display: flex; gap: 4px; }
         .typing-dot { width: 8px; height: 8px; background: #888; border-radius: 50%; animation: typing 1.4s infinite; }
@@ -360,23 +172,13 @@ window.supabase.auth.onAuthStateChange((event, session) => {
                 <i class="fas fa-folder-plus"></i><span>Nuovo Progetto</span>
             </button>
             
-            <div class="projects-section" id="projectsSection" style="display: none;">
-                <div id="projectsList"></div>
-            </div>
+            <button class="new-chat-btn" onclick="newChat()" style="display: none;" id="newChatBtn">
+                <i class="fas fa-plus"></i><span>Nuova Chat</span>
+            </button>
             
-            <div class="stats-section" id="statsSection" style="display: none;">
-                <div class="stats-title">Utilizzo API</div>
-                <div class="stat-item">
-                    <span class="stat-label">Token utilizzati oggi</span>
-                    <span class="stat-value" id="tokensUsed">0</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-label">Credito residuo</span>
-                    <span class="stat-value" id="creditRemaining">$0.00</span>
-                </div>
-                <div class="stat-bar">
-                    <div class="stat-bar-fill" id="usageBar" style="width: 0%"></div>
-                </div>
+            <div class="projects-section" id="projectsSection" style="display: none;">
+                <div class="projects-header">Progetti</div>
+                <div id="projectsList"></div>
             </div>
         </div>
 
@@ -402,8 +204,7 @@ window.supabase.auth.onAuthStateChange((event, session) => {
                             <li><strong>🔄 Sync universale:</strong> Chat sincronizzate su tutti i dispositivi</li>
                             <li><strong>📁 Progetti:</strong> Organizza le conversazioni in cartelle</li>
                             <li><strong>🧠 Memory:</strong> Claude ricorda tutto il contesto</li>
-                            <li><strong>📎 File:</strong> Condividi file nei progetti</li>
-                            <li><strong>📊 Stats:</strong> Monitora l'utilizzo API</li>
+                            <li><strong>🎨 Interface avanzata:</strong> Design professionale</li>
                         </ul>
                         <p><em>🔐 Accedi con Google per iniziare!</em></p>
                     </div>
@@ -417,15 +218,6 @@ window.supabase.auth.onAuthStateChange((event, session) => {
                     <div class="typing-dot"></div>
                     <div class="typing-dot"></div>
                 </div>
-            </div>
-            
-            <div class="file-upload-area" id="fileUploadArea" style="display: none;">
-                <button class="file-upload-btn" onclick="selectFiles()">
-                    <i class="fas fa-paperclip"></i>
-                    <span>Allega file al progetto</span>
-                </button>
-                <input type="file" id="fileInput" multiple style="display: none;">
-                <div class="file-list" id="fileList"></div>
             </div>
             
             <div class="input-container">
@@ -472,37 +264,30 @@ window.supabase.auth.onAuthStateChange((event, session) => {
         let currentConversation = null;
         let apiKey = localStorage.getItem('claude-api-key') || '';
         let isConnected = false;
-        let projectFiles = {};
-        let apiStats = {
-            tokensUsed: 0,
-            creditRemaining: 100.00
-        };
 
         document.addEventListener('DOMContentLoaded', function() {
             initializeApp();
         });
 
         async function initializeApp() {
-            setupEventListeners();
-            if (apiKey) {
-                document.getElementById('apiKeyInput').value = apiKey;
-                testConnection();
-            }
-            
-            // Handle OAuth callback
-            const { data, error } = await window.supabase.auth.getSession();
-            if (data?.session) {
-                currentUser = data.session.user;
-                showUserInterface(data.session.user);
-                loadUserData();
-            }
-        }
-        
+    setupEventListeners();
+    if (apiKey) {
+        document.getElementById('apiKeyInput').value = apiKey;
+        testConnection();
+    }
+    
+    // Handle OAuth callback
+    const { data, error } = await window.supabase.auth.getSession();
+    if (data?.session) {
+        currentUser = data.session.user;
+        showUserInterface(data.session.user);
+        loadUserData();
+    }
+}
         function setupEventListeners() {
             document.getElementById('sidebarToggle').addEventListener('click', toggleSidebar);
             document.getElementById('modalClose').addEventListener('click', closeSettings);
             document.getElementById('sendButton').addEventListener('click', sendMessage);
-            document.getElementById('fileInput').addEventListener('change', handleFileSelect);
             
             const textarea = document.getElementById('messageInput');
             textarea.addEventListener('input', autoResize);
@@ -536,10 +321,6 @@ window.supabase.auth.onAuthStateChange((event, session) => {
         async function logoutUser() {
             try {
                 await window.supabase.auth.signOut();
-                currentUser = null;
-                currentProject = null;
-                currentConversation = null;
-                showLoginInterface();
             } catch (error) {
                 console.error('Logout error:', error);
             }
@@ -549,8 +330,8 @@ window.supabase.auth.onAuthStateChange((event, session) => {
             document.getElementById('loginSection').style.display = 'none';
             document.getElementById('userInfo').style.display = 'flex';
             document.getElementById('newProjectBtn').style.display = 'flex';
+            document.getElementById('newChatBtn').style.display = 'flex';
             document.getElementById('projectsSection').style.display = 'block';
-            document.getElementById('statsSection').style.display = 'block';
             
             document.getElementById('userName').textContent = user.user_metadata?.full_name || user.email;
             document.getElementById('userAvatar').src = user.user_metadata?.picture || user.user_metadata?.avatar_url || '';
@@ -562,17 +343,14 @@ window.supabase.auth.onAuthStateChange((event, session) => {
             if (apiKey && isConnected) {
                 document.getElementById('sendButton').disabled = false;
             }
-            
-            updateAPIStats();
         }
 
         function showLoginInterface() {
             document.getElementById('loginSection').style.display = 'block';
             document.getElementById('userInfo').style.display = 'none';
             document.getElementById('newProjectBtn').style.display = 'none';
+            document.getElementById('newChatBtn').style.display = 'none';
             document.getElementById('projectsSection').style.display = 'none';
-            document.getElementById('statsSection').style.display = 'none';
-            document.getElementById('fileUploadArea').style.display = 'none';
             
             const messageInput = document.getElementById('messageInput');
             messageInput.disabled = true;
@@ -608,9 +386,7 @@ window.supabase.auth.onAuthStateChange((event, session) => {
                             created_at: new Date().toISOString(),
                             updated_at: new Date().toISOString()
                         }
-                    ])
-                    .select()
-                    .single();
+                    ]);
 
                 if (error) {
                     console.error('Error creating project:', error);
@@ -633,7 +409,7 @@ window.supabase.auth.onAuthStateChange((event, session) => {
             try {
                 const { data: projects, error } = await window.supabase
                     .from('projects')
-                    .select('*, conversations(*)')
+                    .select('*')
                     .eq('user_id', currentUser.id)
                     .order('updated_at', { ascending: false });
 
@@ -643,9 +419,6 @@ window.supabase.auth.onAuthStateChange((event, session) => {
                 }
 
                 renderProjects(projects || []);
-                
-                // Load API stats
-                loadAPIStats();
                 
             } catch (error) {
                 console.error('Error loading data:', error);
@@ -657,89 +430,49 @@ window.supabase.auth.onAuthStateChange((event, session) => {
             projectsList.innerHTML = '';
 
             projects.forEach(project => {
-                const projectGroup = document.createElement('div');
-                projectGroup.className = 'project-group';
-                projectGroup.dataset.projectId = project.id;
+                const projectDiv = document.createElement('div');
+                projectDiv.className = 'project-item';
+                projectDiv.dataset.id = project.id;
                 
-                const projectHeader = document.createElement('div');
-                projectHeader.className = 'project-header';
-                projectHeader.innerHTML = `
-                    <div class="project-header-content">
-                        <i class="fas fa-chevron-right project-arrow"></i>
-                        <i class="fas fa-folder"></i>
-                        <span class="project-name">${project.name}</span>
-                    </div>
-                    <div class="project-actions">
-                        <button class="project-action-btn" onclick="editProject('${project.id}')" title="Modifica">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="project-action-btn" onclick="deleteProject('${project.id}')" title="Elimina">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                `;
+                const titleDiv = document.createElement('div');
+                titleDiv.className = 'project-title';
+                titleDiv.textContent = project.name;
                 
-                projectHeader.addEventListener('click', function(e) {
-                    if (!e.target.closest('.project-actions')) {
-                        toggleProjectChats(project.id);
-                    }
+                const countDiv = document.createElement('div');
+                countDiv.className = 'project-chat-count';
+                countDiv.textContent = '0 conversazioni';
+                
+                projectDiv.appendChild(titleDiv);
+                projectDiv.appendChild(countDiv);
+                
+                projectDiv.addEventListener('click', function() {
+                    selectProject(project.id, project.name);
                 });
-                
-                const projectChats = document.createElement('div');
-                projectChats.className = 'project-chats';
-                projectChats.id = `project-chats-${project.id}`;
-                
-                // Render conversations
-                if (project.conversations && project.conversations.length > 0) {
-                    project.conversations.forEach(conv => {
-                        const chatItem = document.createElement('div');
-                        chatItem.className = 'chat-item';
-                        chatItem.dataset.conversationId = conv.id;
-                        chatItem.innerHTML = \`
-                            <span class="chat-title">\${conv.title || 'Chat senza titolo'}</span>
-                            <span class="chat-date">\${new Date(conv.created_at).toLocaleDateString('it-IT')}</span>
-                        \`;
-                        chatItem.addEventListener('click', () => loadConversation(conv.id, project.id, project.name));
-                        projectChats.appendChild(chatItem);
-                    });
-                }
-                
-                // Add new chat button
-                const addChatBtn = document.createElement('div');
-                addChatBtn.className = 'add-chat-btn';
-                addChatBtn.innerHTML = \`
-                    <i class="fas fa-plus"></i>
-                    <span>Nuova chat</span>
-                \`;
-                addChatBtn.addEventListener('click', () => createNewChat(project.id, project.name));
-                projectChats.appendChild(addChatBtn);
-                
-                projectGroup.appendChild(projectHeader);
-                projectGroup.appendChild(projectChats);
-                projectsList.appendChild(projectGroup);
+                projectsList.appendChild(projectDiv);
             });
         }
 
-        function toggleProjectChats(projectId) {
-            const projectChats = document.getElementById(\`project-chats-\${projectId}\`);
-            const arrow = document.querySelector(\`[data-project-id="\${projectId}"] .project-arrow\`);
+        function selectProject(projectId, projectName) {
+            currentProject = projectId;
             
-            if (projectChats.classList.contains('open')) {
-                projectChats.classList.remove('open');
-                arrow.classList.remove('open');
-            } else {
-                // Close all other projects
-                document.querySelectorAll('.project-chats').forEach(pc => pc.classList.remove('open'));
-                document.querySelectorAll('.project-arrow').forEach(pa => pa.classList.remove('open'));
-                
-                projectChats.classList.add('open');
-                arrow.classList.add('open');
+            document.querySelectorAll('.project-item').forEach(function(el) {
+                el.classList.remove('active');
+            });
+            
+            const targetElement = document.querySelector('[data-id="' + projectId + '"]');
+            if (targetElement) {
+                targetElement.classList.add('active');
             }
+            
+            document.getElementById('currentProject').textContent = '📁 ' + projectName;
         }
 
-        async function createNewChat(projectId, projectName) {
-            if (!currentUser) return;
-            
+        async function newChat() {
+            if (!currentProject || !currentUser) {
+                alert('⚠️ Seleziona prima un progetto!');
+                return;
+            }
+
             try {
                 const { data, error } = await window.supabase
                     .from('conversations')
@@ -747,7 +480,7 @@ window.supabase.auth.onAuthStateChange((event, session) => {
                         {
                             title: 'Nuova conversazione',
                             user_id: currentUser.id,
-                            project_id: projectId,
+                            project_id: currentProject,
                             created_at: new Date().toISOString(),
                             updated_at: new Date().toISOString()
                         }
@@ -761,165 +494,15 @@ window.supabase.auth.onAuthStateChange((event, session) => {
                     return;
                 }
 
-                loadConversation(data.id, projectId, projectName);
-                loadUserData(); // Reload to show new chat
+                currentConversation = data.id;
+                
+                document.getElementById('chatContainer').innerHTML = '';
+                addMessageToChat('🚀 Nuova conversazione avviata! Come posso aiutarti?', 'assistant');
                 
             } catch (error) {
                 console.error('Error creating chat:', error);
                 alert('❌ Errore nella creazione della chat');
             }
-        }
-
-        async function loadConversation(conversationId, projectId, projectName) {
-            currentConversation = conversationId;
-            currentProject = projectId;
-            
-            // Update UI
-            document.querySelectorAll('.chat-item').forEach(item => item.classList.remove('active'));
-            document.querySelector(\`[data-conversation-id="\${conversationId}"]\`)?.classList.add('active');
-            document.getElementById('currentProject').textContent = \`📁 \${projectName}\`;
-            document.getElementById('fileUploadArea').style.display = 'block';
-            
-            // Load messages
-            try {
-                const { data: messages, error } = await window.supabase
-                    .from('messages')
-                    .select('*')
-                    .eq('conversation_id', conversationId)
-                    .order('created_at', { ascending: true });
-
-                if (error) {
-                    console.error('Error loading messages:', error);
-                    return;
-                }
-
-                // Clear chat and render messages
-                document.getElementById('chatContainer').innerHTML = '';
-                
-                if (messages && messages.length > 0) {
-                    messages.forEach(msg => {
-                        addMessageToChat(msg.content, msg.role);
-                    });
-                } else {
-                    addMessageToChat('🚀 Conversazione avviata! Come posso aiutarti?', 'assistant');
-                }
-                
-                // Load project files
-                loadProjectFiles(projectId);
-                
-            } catch (error) {
-                console.error('Error loading conversation:', error);
-            }
-        }
-
-        async function loadProjectFiles(projectId) {
-            try {
-                const { data: files, error } = await window.supabase
-                    .from('project_files')
-                    .select('*')
-                    .eq('project_id', projectId)
-                    .order('created_at', { ascending: false });
-
-                if (error) {
-                    console.error('Error loading files:', error);
-                    return;
-                }
-
-                projectFiles[projectId] = files || [];
-                renderFileList();
-                
-            } catch (error) {
-                console.error('Error loading files:', error);
-            }
-        }
-
-        function selectFiles() {
-            document.getElementById('fileInput').click();
-        }
-
-        async function handleFileSelect(event) {
-            const files = event.target.files;
-            if (!files.length || !currentProject) return;
-            
-            for (let file of files) {
-                try {
-                    // Here you would upload to Supabase Storage
-                    // For now, we'll just add to the UI
-                    const fileData = {
-                        id: Date.now().toString(),
-                        name: file.name,
-                        size: file.size,
-                        type: file.type,
-                        project_id: currentProject
-                    };
-                    
-                    if (!projectFiles[currentProject]) {
-                        projectFiles[currentProject] = [];
-                    }
-                    projectFiles[currentProject].push(fileData);
-                    
-                } catch (error) {
-                    console.error('Error uploading file:', error);
-                }
-            }
-            
-            renderFileList();
-            event.target.value = '';
-        }
-
-        function renderFileList() {
-            const fileList = document.getElementById('fileList');
-            const files = projectFiles[currentProject] || [];
-            
-            fileList.innerHTML = '';
-            
-            files.forEach(file => {
-                const fileItem = document.createElement('div');
-                fileItem.className = 'file-item';
-                fileItem.innerHTML = \`
-                    <div class="file-name">
-                        <i class="fas fa-file"></i>
-                        <span>\${file.name}</span>
-                    </div>
-                    <button class="file-remove" onclick="removeFile('\${file.id}')">
-                        <i class="fas fa-times"></i>
-                    </button>
-                \`;
-                fileList.appendChild(fileItem);
-            });
-        }
-
-        function removeFile(fileId) {
-            if (!currentProject) return;
-            
-            projectFiles[currentProject] = projectFiles[currentProject].filter(f => f.id !== fileId);
-            renderFileList();
-        }
-
-        async function loadAPIStats() {
-            // In a real implementation, this would fetch from your backend
-            // For now, we'll use localStorage
-            const savedStats = localStorage.getItem('api-stats');
-            if (savedStats) {
-                apiStats = JSON.parse(savedStats);
-                updateAPIStats();
-            }
-        }
-
-        function updateAPIStats() {
-            document.getElementById('tokensUsed').textContent = apiStats.tokensUsed.toLocaleString();
-            document.getElementById('creditRemaining').textContent = `${apiStats.creditRemaining.toFixed(2)}`;
-            
-            const usagePercent = (apiStats.tokensUsed / 1000000) * 100; // Assuming 1M token limit
-            document.getElementById('usageBar').style.width = \`\${Math.min(usagePercent, 100)}%\`;
-        }
-
-        function updateTokenUsage(tokens) {
-            apiStats.tokensUsed += tokens;
-            apiStats.creditRemaining = Math.max(0, apiStats.creditRemaining - (tokens * 0.00001)); // Example pricing
-            
-            localStorage.setItem('api-stats', JSON.stringify(apiStats));
-            updateAPIStats();
         }
 
         async function sendMessage() {
@@ -930,7 +513,7 @@ window.supabase.auth.onAuthStateChange((event, session) => {
             }
 
             if (!currentUser || !currentConversation) {
-                alert('⚠️ Seleziona o crea una conversazione!');
+                alert('⚠️ Accedi e crea una conversazione!');
                 return;
             }
 
@@ -944,57 +527,19 @@ window.supabase.auth.onAuthStateChange((event, session) => {
                 input.style.height = 'auto';
                 showTypingIndicator();
 
-                // Get conversation context
-                const { data: recentMessages } = await window.supabase
-                    .from('messages')
-                    .select('*')
-                    .eq('conversation_id', currentConversation)
-                    .order('created_at', { ascending: false })
-                    .limit(10);
-
-                const messages = recentMessages?.reverse() || [];
-                messages.push({ role: 'user', content: message });
-
-                const response = await callClaudeAPI(messages);
+                const response = await callClaudeAPI(message);
                 hideTypingIndicator();
                 
                 if (response) {
-                    addMessageToChat(response.content, 'assistant');
-                    
-                    // Update token usage
-                    if (response.usage) {
-                        updateTokenUsage(response.usage.total_tokens);
-                    }
+                    addMessageToChat(response, 'assistant');
                     
                     // Save messages to database
-                    await saveMessages(message, response.content);
-                    
-                    // Update conversation title if it's the first message
-                    if (messages.length <= 2) {
-                        updateConversationTitle(message);
-                    }
+                    await saveMessages(message, response);
                 }
                 
             } catch (error) {
                 hideTypingIndicator();
                 addMessageToChat('❌ Errore nella comunicazione con Claude.', 'assistant');
-            }
-        }
-
-        async function updateConversationTitle(firstMessage) {
-            if (!currentConversation) return;
-            
-            const title = firstMessage.substring(0, 50) + (firstMessage.length > 50 ? '...' : '');
-            
-            try {
-                await window.supabase
-                    .from('conversations')
-                    .update({ title, updated_at: new Date().toISOString() })
-                    .eq('id', currentConversation);
-                    
-                loadUserData(); // Reload to show updated title
-            } catch (error) {
-                console.error('Error updating title:', error);
             }
         }
 
@@ -1134,14 +679,14 @@ window.supabase.auth.onAuthStateChange((event, session) => {
             document.getElementById('typingIndicator').style.display = 'none';
         }
 
-        async function callClaudeAPI(messages) {
+        async function callClaudeAPI(message) {
             const model = document.getElementById('modelSelector').value;
             
             const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
-                    messages: messages.map(m => ({ role: m.role, content: m.content })), 
+                    messages: [{ role: 'user', content: message }], 
                     model, 
                     apiKey 
                 })
@@ -1152,35 +697,147 @@ window.supabase.auth.onAuthStateChange((event, session) => {
             }
             
             const data = await response.json();
-            return data;
+            return data.content;
         }
 
-        // Placeholder functions for edit/delete
-        window.editProject = function(projectId) {
-            console.log('Edit project:', projectId);
-            // TODO: Implement edit functionality
-        };
-
-        window.deleteProject = async function(projectId) {
-            if (!confirm('Sei sicuro di voler eliminare questo progetto?')) return;
-            
-            try {
-                const { error } = await window.supabase
-                    .from('projects')
-                    .delete()
-                    .eq('id', projectId);
-                    
-                if (error) {
-                    console.error('Error deleting project:', error);
-                    alert('❌ Errore nell\'eliminazione del progetto');
-                    return;
-                }
-                
-                loadUserData();
-            } catch (error) {
-                console.error('Error deleting project:', error);
-            }
-        };
+        
     </script>
 </body>
 </html>`);
+});
+
+// Chat API endpoint - same as before
+app.post('/api/chat', async (req, res) => {
+    try {
+        const { messages, model, apiKey } = req.body;
+
+        if (!apiKey) {
+            return res.status(400).json({ error: 'API key richiesta' });
+        }
+
+        if (!messages || !Array.isArray(messages)) {
+            return res.status(400).json({ error: 'Array di messaggi richiesto' });
+        }
+
+        const validModels = ['claude-sonnet-4-20250514', 'claude-opus-4'];
+        const selectedModel = validModels.includes(model) ? model : 'claude-sonnet-4-20250514';
+
+        console.log('📤 Richiesta a Claude:', selectedModel);
+
+        const anthropicResponse = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': apiKey,
+                'anthropic-version': '2023-06-01'
+            },
+            body: JSON.stringify({
+                model: selectedModel,
+                max_tokens: 4000,
+                messages: messages,
+                temperature: 0.7
+            })
+        });
+
+        if (!anthropicResponse.ok) {
+            console.error('❌ Errore API Anthropic');
+            return res.status(anthropicResponse.status).json({ 
+                error: 'Errore chiamata API'
+            });
+        }
+
+        const data = await anthropicResponse.json();
+        
+        if (data.content && data.content[0] && data.content[0].text) {
+            console.log('✅ Risposta ricevuta da Claude');
+            res.json({ 
+                content: data.content[0].text,
+                model: selectedModel
+            });
+        } else {
+            console.error('❌ Formato risposta inaspettato');
+            res.status(500).json({ error: 'Formato risposta inaspettato' });
+        }
+
+    } catch (error) {
+        console.error('❌ Errore server:', error);
+        res.status(500).json({ 
+            error: 'Errore interno del server'
+        });
+    }
+});
+
+// Test API endpoint - same as before
+app.post('/api/test', async (req, res) => {
+    try {
+        const { apiKey } = req.body;
+
+        if (!apiKey) {
+            return res.status(400).json({ success: false, error: 'API key richiesta' });
+        }
+
+        console.log('🧪 Test connessione API...');
+
+        const testResponse = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': apiKey,
+                'anthropic-version': '2023-06-01'
+            },
+            body: JSON.stringify({
+                model: 'claude-sonnet-4-20250514',
+                max_tokens: 20,
+                messages: [{ role: 'user', content: 'Test' }]
+            })
+        });
+
+        if (testResponse.ok) {
+            console.log('✅ Test API riuscito');
+            res.json({ success: true, message: 'API key valida!' });
+        } else {
+            console.log('❌ Test API fallito');
+            res.status(testResponse.status).json({ 
+                success: false, 
+                error: 'API key non valida'
+            });
+        }
+
+    } catch (error) {
+        console.error('❌ Errore test API:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Errore nel test API'
+        });
+    }
+});
+
+app.get('/api/health', (req, res) => {
+    res.json({ 
+        status: '✅ OK', 
+        timestamp: new Date().toISOString(),
+        version: '6.0.0-supabase-complete'
+    });
+});
+
+app.use((req, res) => {
+    res.status(404).json({ error: '❌ Endpoint non trovato' });
+});
+
+app.use((error, req, res, next) => {
+    console.error('❌ Errore non gestito:', error);
+    res.status(500).json({ error: 'Errore interno del server' });
+});
+
+app.listen(PORT, () => {
+    console.log('🚀 ==========================================');
+    console.log('🚀  CLAUDE AI INTERFACE PRO - SUPABASE    🚀');
+    console.log('🚀 ==========================================');
+    console.log(`📱 Frontend: http://localhost:${PORT}`);
+    console.log(`🔗 API Chat: http://localhost:${PORT}/api/chat`);
+    console.log(`🧪 API Test: http://localhost:${PORT}/api/test`);
+    console.log(`💚 Health: http://localhost:${PORT}/api/health`);
+    console.log('🔥 ✅ Supabase Auth + Google OAuth completi');
+    console.log('🔥 ✅ Database integrato per progetti/chat');
+    console.log('🚀 ==========================================');
+});
