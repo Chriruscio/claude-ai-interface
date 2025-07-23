@@ -27,7 +27,10 @@ app.get('/', (req, res) => {
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ4Zm51eGh3dWlnbXRkeXNmaG5iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzc1NDQ4MzEsImV4cCI6MjA1MzEyMDgzMX0.u-eXqc-l6v7vCHsVVKlK8J1wTfhuwS6RGNrCTNH82RM';
         
 window.supabase = createClient(supabaseUrl, supabaseKey);
-
+// AGGIUNGI QUI IL DEBUG:
+if (window.location.hash.includes('access_token')) {
+    console.log('Access token detected in URL');
+}
 // Handle OAuth callback with delay
 setTimeout(async () => {
     const { data, error } = await window.supabase.auth.getSession();
@@ -35,8 +38,10 @@ setTimeout(async () => {
         console.log('User found after delay:', data.session.user.email);
         window.history.replaceState({}, document.title, window.location.pathname);
         window.location.reload();
+    } else {
+        console.log('No session found after 5 seconds');
     }
-}, 2000);
+}, 5000);
 
 // Also keep the auth state listener
 window.supabase.auth.onAuthStateChange((event, session) => {
