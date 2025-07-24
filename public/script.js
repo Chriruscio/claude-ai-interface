@@ -2077,6 +2077,7 @@ window.addEventListener('offline', monitorConnection);
 monitorConnection();
 
 // Service Worker registration (for PWA capabilities)
+/*
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', function() {
         navigator.serviceWorker.register('/sw.js')
@@ -2088,6 +2089,8 @@ if ('serviceWorker' in navigator) {
             });
     });
 }
+*/
+console.log('📱 Service Worker disabilitato temporaneamente');
 
 // Export for debugging
 if (typeof window !== 'undefined') {
