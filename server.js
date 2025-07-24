@@ -10,6 +10,14 @@ app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static('/app/public'));
 
+// Debug middleware (opzionale - per vedere le richieste)
+app.use((req, res, next) => {
+    console.log(`${req.method} ${req.path}`);
+    next();
+});
+
+// API ENDPOINTS - DEVONO ESSERE PRIMA DEI FILE STATICI!
+
 // API test endpoint
 app.post('/api/test', async (req, res) => {
     const { apiKey } = req.body;
@@ -92,15 +100,21 @@ app.post('/api/chat', async (req, res) => {
     }
 });
 
+// ROUTES PER FILE STATICI - DEVONO ESSERE ALLA FINE!
+
+// Homepage
 app.get('/', (req, res) => {
     res.sendFile(path.resolve('/app/public', 'index.html'));
 });
 
-// Fallback per tutti gli altri percorsi
+// Fallback per tutti gli altri percorsi (DEVE ESSERE L'ULTIMO!)
 app.get('*', (req, res) => {
     res.sendFile(path.resolve('/app/public', 'index.html'));
 });
 
+// Start server
 app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`📁 Serving static files from: /app/public`);
+    console.log(`🔗 API endpoints: /api/test, /api/chat`);
 });
