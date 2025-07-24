@@ -1,93 +1,26 @@
 const express = require('express');
 const cors = require('cors');
-const fetch = require('node-fetch');
+const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors({
-    origin: ['http://localhost:3000', 'http://127.0.0.1:3000', 'https://*.railway.app', 'https://*.vercel.app'],
-    credentials: true
-}));
+// Middleware
+app.use(cors());
 app.use(express.json({ limit: '10mb' }));
-app.use(express.static('public'));
-app.get('/', (req, res) => {
-    res.sendFile(__dirname + '/public/index.html');
-});
+app.use(express.static('.'));
 
-// Chat API endpoint - same as before
-app.post('/api/chat', async (req, res) => {
-    try {
-        const { messages, model, apiKey } = req.body;
-
-        if (!apiKey) {
-            return res.status(400).json({ error: 'API key richiesta' });
-        }
-
-        if (!messages || !Array.isArray(messages)) {
-            return res.status(400).json({ error: 'Array di messaggi richiesto' });
-        }
-
-        const validModels = ['claude-sonnet-4-20250514', 'claude-opus-4'];
-        const selectedModel = validModels.includes(model) ? model : 'claude-sonnet-4-20250514';
-
-        console.log('📤 Richiesta a Claude:', selectedModel);
-
-        const anthropicResponse = await fetch('https://api.anthropic.com/v1/messages', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': apiKey,
-                'anthropic-version': '2023-06-01'
-            },
-            body: JSON.stringify({
-                model: selectedModel,
-                max_tokens: 4000,
-                messages: messages,
-                temperature: 0.7
-            })
-        });
-
-        if (!anthropicResponse.ok) {
-            console.error('❌ Errore API Anthropic');
-            return res.status(anthropicResponse.status).json({ 
-                error: 'Errore chiamata API'
-            });
-        }
-
-        const data = await anthropicResponse.json();
-        
-        if (data.content && data.content[0] && data.content[0].text) {
-            console.log('✅ Risposta ricevuta da Claude');
-            res.json({ 
-                content: data.content[0].text,
-                model: selectedModel
-            });
-        } else {
-            console.error('❌ Formato risposta inaspettato');
-            res.status(500).json({ error: 'Formato risposta inaspettato' });
-        }
-
-    } catch (error) {
-        console.error('❌ Errore server:', error);
-        res.status(500).json({ 
-            error: 'Errore interno del server'
-        });
-    }
-});
-
-// Test API endpoint - same as before
+// API test endpoint
 app.post('/api/test', async (req, res) => {
+    const { apiKey } = req.body;
+    
+    if (!apiKey || !apiKey.startsWith('sk-ant-')) {
+        return res.json({ success: false, error: 'API key non valida' });
+    }
+    
     try {
-        const { apiKey } = req.body;
-
-        if (!apiKey) {
-            return res.status(400).json({ success: false, error: 'API key richiesta' });
-        }
-
-        console.log('🧪 Test connessione API...');
-
-        const testResponse = await fetch('https://api.anthropic.com/v1/messages', {
+        const fetch = (await import('node-fetch')).default;
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -95,58 +28,75 @@ app.post('/api/test', async (req, res) => {
                 'anthropic-version': '2023-06-01'
             },
             body: JSON.stringify({
-                model: 'claude-sonnet-4-20250514',
-                max_tokens: 20,
-                messages: [{ role: 'user', content: 'Test' }]
+                model: 'claude-3-sonnet-20240229',
+                max_tokens: 10,
+                messages: [{ role: 'user', content: 'Hi' }]
             })
         });
 
-        if (testResponse.ok) {
-            console.log('✅ Test API riuscito');
-            res.json({ success: true, message: 'API key valida!' });
+        if (response.ok) {
+            res.json({ success: true });
         } else {
-            console.log('❌ Test API fallito');
-            res.status(testResponse.status).json({ 
-                success: false, 
-                error: 'API key non valida'
-            });
+            const error = await response.json();
+            res.json({ success: false, error: error.error?.message || 'API Error' });
         }
-
     } catch (error) {
-        console.error('❌ Errore test API:', error);
-        res.status(500).json({ 
-            success: false, 
-            error: 'Errore nel test API'
-        });
+        res.json({ success: false, error: error.message });
     }
 });
 
-app.get('/api/health', (req, res) => {
-    res.json({ 
-        status: '✅ OK', 
-        timestamp: new Date().toISOString(),
-        version: '6.0.0-supabase-complete'
-    });
+// API chat endpoint  
+app.post('/api/chat', async (req, res) => {
+    const { messages, model, apiKey } = req.body;
+    
+    if (!apiKey) {
+        return res.status(400).json({ error: 'API key mancante' });
+    }
+    
+    const modelMap = {
+        'claude-sonnet-4-20250514': 'claude-3-sonnet-20240229',
+        'claude-opus-4': 'claude-3-opus-20240229'
+    };
+    
+    const claudeModel = modelMap[model] || 'claude-3-sonnet-20240229';
+    
+    try {
+        const fetch = (await import('node-fetch')).default;
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': apiKey,
+                'anthropic-version': '2023-06-01'
+            },
+            body: JSON.stringify({
+                model: claudeModel,
+                max_tokens: 4000,
+                messages: messages
+            })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            return res.status(response.status).json({ 
+                error: error.error?.message || 'API Error' 
+            });
+        }
+
+        const data = await response.json();
+        res.json(data);
+        
+    } catch (error) {
+        console.error('API Error:', error);
+        res.status(500).json({ error: error.message });
+    }
 });
 
-app.use((req, res) => {
-    res.status(404).json({ error: '❌ Endpoint non trovato' });
-});
-
-app.use((error, req, res, next) => {
-    console.error('❌ Errore non gestito:', error);
-    res.status(500).json({ error: 'Errore interno del server' });
+// Serve il frontend
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 app.listen(PORT, () => {
-    console.log('🚀 ==========================================');
-    console.log('🚀  CLAUDE AI INTERFACE PRO - SUPABASE    🚀');
-    console.log('🚀 ==========================================');
-    console.log(`📱 Frontend: http://localhost:${PORT}`);
-    console.log(`🔗 API Chat: http://localhost:${PORT}/api/chat`);
-    console.log(`🧪 API Test: http://localhost:${PORT}/api/test`);
-    console.log(`💚 Health: http://localhost:${PORT}/api/health`);
-    console.log('🔥 ✅ Supabase Auth + Google OAuth completi');
-    console.log('🔥 ✅ Database integrato per progetti/chat');
-    console.log('🚀 ==========================================');
+    console.log(`🚀 Server running on port ${PORT}`);
 });
