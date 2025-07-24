@@ -126,6 +126,44 @@ body {
     width: var(--sidebar-collapsed);
 }
 
+/* Fix per nascondere testi quando sidebar è collassata */
+.sidebar.collapsed .logo-text,
+.sidebar.collapsed .new-chat-btn span,
+.sidebar.collapsed .conversations-header,
+.sidebar.collapsed .conversation-title,
+.sidebar.collapsed .section-header span,
+.sidebar.collapsed .project-title,
+.sidebar.collapsed .project-meta,
+.sidebar.collapsed .plan-name,
+.sidebar.collapsed .plan-status,
+.sidebar.collapsed .user-name {
+    opacity: 0;
+    width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    transition: all var(--transition-fast);
+}
+
+.sidebar.collapsed .user-details,
+.sidebar.collapsed .project-details {
+    min-width: 0;
+    overflow: hidden;
+}
+
+.sidebar.collapsed .conversations-section,
+.sidebar.collapsed .projects-section,
+.sidebar.collapsed .new-chat-section {
+    display: none;
+}
+
+.sidebar.collapsed .sidebar-footer {
+    padding: 8px;
+}
+
+.sidebar.collapsed .upgrade-section {
+    display: none;
+}
+
 /* Sidebar header */
 .sidebar-header {
     display: flex;
