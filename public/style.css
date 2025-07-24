@@ -1,0 +1,24 @@
+/* CSS Test - Separazione funzionante */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #1a1a1a;
+    color: #e5e5e5;
+    margin: 0;
+    padding: 40px;
+    line-height: 1.6;
+}
+
+h1 {
+    color: #16a34a;
+    font-size: 2rem;
+    margin-bottom: 20px;
+}
+
+p {
+    margin-bottom: 16px;
+    font-size: 1.1rem;
+}
+
+strong {
+    color: #2563eb;
+}
