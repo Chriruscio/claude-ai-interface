@@ -119,45 +119,62 @@
                 <div id="projectsList" class="projects-list"></div>
             </div>
 
-            <!-- Sidebar footer -->
+            <!-- NEW: Project Documents section -->
+            <div class="project-documents-section" id="projectDocumentsSection" style="display: none;">
+                <div class="section-header">
+                    <span>Documenti Progetto</span>
+                    <button class="add-btn" onclick="uploadProjectDocument()" title="Carica documento">
+                        <i class="fas fa-upload"></i>
+                    </button>
+                </div>
+                <div id="projectDocumentsList" class="documents-list"></div>
+            </div>
+
             <!-- Sidebar footer con statistiche -->
-<div class="sidebar-footer">
-    <!-- Token Statistics -->
-    <div class="token-stats" id="tokenStats" style="display: none;">
-        <div class="stats-header">
-            <i class="fas fa-chart-bar"></i>
-            <span>Statistiche</span>
-        </div>
-        <div class="stats-grid">
-            <div class="stat-item">
-                <div class="stat-label">Token</div>
-                <div class="stat-value" id="tokensUsed">0</div>
+            <div class="sidebar-footer">
+                <!-- Token Statistics -->
+                <div class="token-stats" id="tokenStats" style="display: none;">
+                    <div class="stats-header">
+                        <i class="fas fa-chart-bar"></i>
+                        <span>Statistiche</span>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-label">Token</div>
+                            <div class="stat-value" id="tokensUsed">0</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Messaggi</div>
+                            <div class="stat-value" id="messagesSent">0</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Costo</div>
+                            <div class="stat-value" id="estimatedCost">$0.00</div>
+                        </div>
+                    </div>
+                    <!-- NEW: Spending progress bar -->
+                    <div class="spending-progress-container">
+                        <div class="spending-progress-bar">
+                            <div class="spending-progress" id="spendingProgress"></div>
+                        </div>
+                        <div class="spending-text">Limite spesa</div>
+                    </div>
+                    <div class="reset-stats">
+                        <button class="reset-btn" onclick="resetStats()">
+                            <i class="fas fa-refresh"></i>
+                            Reset
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Plan info -->
+                <div class="upgrade-section">
+                    <div class="plan-info">
+                        <span class="plan-name">Claude Pro</span>
+                        <span class="plan-status">Attivo</span>
+                    </div>
+                </div>
             </div>
-            <div class="stat-item">
-                <div class="stat-label">Messaggi</div>
-                <div class="stat-value" id="messagesSent">0</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-label">Costo</div>
-                <div class="stat-value" id="estimatedCost">$0.00</div>
-            </div>
-        </div>
-        <div class="reset-stats">
-            <button class="reset-btn" onclick="resetStats()">
-                <i class="fas fa-refresh"></i>
-                Reset
-            </button>
-        </div>
-    </div>
-    
-    <!-- Plan info -->
-    <div class="upgrade-section">
-        <div class="plan-info">
-            <span class="plan-name">Claude Pro</span>
-            <span class="plan-status">Attivo</span>
-        </div>
-    </div>
-</div>
         </div>
 
         <!-- Main content area -->
@@ -313,6 +330,21 @@
                     </div>
                 </div>
                 
+                <!-- NEW: API Spending Settings -->
+                <div class="settings-section">
+                    <h3>Controllo Spesa API</h3>
+                    <div class="form-group">
+                        <label>Limite di spesa ($)</label>
+                        <input type="number" id="spendingLimitInput" step="0.01" min="0.01" max="1000" class="form-input" placeholder="10.00">
+                        <small>Limite massimo di spesa per sessione</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Soglia di avviso ($)</label>
+                        <input type="number" id="warningThresholdInput" step="0.01" min="0.01" max="1000" class="form-input" placeholder="8.00">
+                        <small>Ricevi un avviso quando raggiungi questa soglia</small>
+                    </div>
+                </div>
+                
                 <div class="settings-section">
                     <h3>Preferenze</h3>
                     <div class="form-group">
@@ -378,6 +410,84 @@
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeFileUpload()">Annulla</button>
                 <button class="btn btn-primary" onclick="confirmFileUpload()">Carica</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- NEW: Project File Upload Modal -->
+    <div class="modal" id="projectFileUploadModal">
+        <div class="modal-backdrop" onclick="closeProjectFileUpload()"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Carica documento nel progetto</h2>
+                <button class="modal-close" onclick="closeProjectFileUpload()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Seleziona file</label>
+                    <input type="file" id="projectFileInput" multiple accept=".txt,.pdf,.doc,.docx,.md,.json,.csv" class="form-input">
+                    <small>I documenti saranno disponibili in tutte le chat del progetto</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeProjectFileUpload()">Annulla</button>
+                <button class="btn btn-primary" onclick="closeProjectFileUpload()">Carica</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- NEW: Artifact Viewer Modal -->
+    <div class="modal artifact-modal" id="artifactViewerModal">
+        <div class="modal-backdrop" onclick="closeArtifactViewer()"></div>
+        <div class="modal-content artifact-viewer-content">
+            <div class="modal-header">
+                <h2 id="artifactViewerTitle">Artifact</h2>
+                <button class="modal-close" onclick="closeArtifactViewer()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body artifact-viewer-body">
+                <div id="artifactViewer" class="artifact-viewer"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- NEW: Artifact Editor Modal -->
+    <div class="modal artifact-modal" id="artifactEditorModal">
+        <div class="modal-backdrop" onclick="closeArtifactEditor()"></div>
+        <div class="modal-content artifact-editor-content">
+            <div class="modal-header">
+                <h2>Modifica Artifact</h2>
+                <button class="modal-close" onclick="closeArtifactEditor()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body artifact-editor-body">
+                <div class="form-group">
+                    <label>Titolo</label>
+                    <input type="text" id="artifactEditorTitle" class="form-input" placeholder="Nome artifact">
+                </div>
+                <div class="form-group">
+                    <label>Tipo</label>
+                    <select id="artifactEditorType" class="form-input">
+                        <option value="html">HTML</option>
+                        <option value="javascript">JavaScript</option>
+                        <option value="python">Python</option>
+                        <option value="css">CSS</option>
+                        <option value="json">JSON</option>
+                        <option value="react">React</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Contenuto</label>
+                    <textarea id="artifactEditorContent" class="form-input artifact-editor-textarea" rows="20" placeholder="Inserisci il codice..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeArtifactEditor()">Annulla</button>
+                <button class="btn btn-primary" onclick="saveEditedArtifact()">Salva</button>
             </div>
         </div>
     </div>
