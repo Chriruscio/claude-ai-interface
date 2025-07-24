@@ -34,10 +34,10 @@ app.post('/api/test', async (req, res) => {
             headers: {
                 'Content-Type': 'application/json',
                 'x-api-key': apiKey,
-                'anthropic-version': '2024-01-01'
+                'anthropic-version': '2023-06-01'
             },
             body: JSON.stringify({
-                model: 'claude-3-sonnet-20240229',
+                model: 'claude-3-5-sonnet-20241022',
                 max_tokens: 10,
                 messages: [{ role: 'user', content: 'Hi' }]
             })
@@ -77,11 +77,11 @@ app.post('/api/chat', async (req, res) => {
     }
     
     const modelMap = {
-    'claude-sonnet-4-20250514': 'claude-sonnet-4-20250514',
-    'claude-opus-4': 'claude-opus-4-20250514'
-};
+        'claude-sonnet-4-20250514': 'claude-sonnet-4-20250514',
+        'claude-opus-4': 'claude-opus-4-20250514'
+    };
     
-    const claudeModel = modelMap[model] || 'claude-3-sonnet-20240229';
+    const claudeModel = modelMap[model] || 'claude-3-5-sonnet-20241022';
     console.log('🤖 Using model:', claudeModel);
     
     try {
@@ -92,7 +92,7 @@ app.post('/api/chat', async (req, res) => {
             headers: {
                 'Content-Type': 'application/json',
                 'x-api-key': apiKey,
-                'anthropic-version': '2024-01-01'
+                'anthropic-version': '2023-06-01'
             },
             body: JSON.stringify({
                 model: claudeModel,
