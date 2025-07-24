@@ -1928,8 +1928,7 @@ function updateStats(userMessage, assistantMessage) {
 function updateStatsDisplay() {
     document.getElementById('tokensUsed').textContent = sessionStats.tokensUsed.toLocaleString();
     document.getElementById('messagesSent').textContent = sessionStats.messagesSent;
-    document.getElementById('estimatedCost'document.getElementById('estimatedCost').textContent = '$' + sessionStats.estimatedCost.toFixed(4);).textContent = ' + sessionStats.estimatedCost.toFixed(4);
-    
+    document.getElementById('estimatedCost').textContent = '$' + sessionStats.estimatedCost.toFixed(4);
     // Update progress bar if close to limit
     const progressBar = document.getElementById('spendingProgress');
     if (progressBar) {
