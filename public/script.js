@@ -1,4 +1,4 @@
-// Claude AI Interface - Complete Frontend Logic
+// Claude AI Interface - Complete Frontend Logic with New Features
 let currentUser = null;
 let currentProject = null;
 let currentConversation = null;
@@ -6,12 +6,22 @@ let apiKey = localStorage.getItem('claude-api-key') || '';
 let isConnected = false;
 let uploadedFiles = [];
 let conversations = [];
+let projectDocuments = [];
+let artifacts = [];
+
 // Statistics tracking
 let sessionStats = {
     tokensUsed: 0,
     messagesSent: 0,
     estimatedCost: 0
 };
+
+// User settings
+let userSettings = {
+    apiSpendingLimit: 10.00,
+    apiWarningThreshold: 8.00
+};
+
 // Theme management
 let isDarkMode = localStorage.getItem('dark-mode') === 'true';
 
@@ -181,6 +191,8 @@ function handleLogout() {
     currentConversation = null;
     conversations = [];
     uploadedFiles = [];
+    projectDocuments = [];
+    artifacts = [];
     showLoginInterface();
 }
 
@@ -193,6 +205,7 @@ function showUserInterface(user) {
     document.getElementById('newChatBtn').style.display = 'flex';
     document.getElementById('conversationsSection').style.display = 'block';
     document.getElementById('projectsSection').style.display = 'block';
+    document.getElementById('projectDocumentsSection').style.display = 'block';
     
     // Update user info
     document.getElementById('userName').textContent = user.user_metadata?.full_name || user.email;
@@ -227,6 +240,7 @@ function showLoginInterface() {
     document.getElementById('newChatBtn').style.display = 'none';
     document.getElementById('conversationsSection').style.display = 'none';
     document.getElementById('projectsSection').style.display = 'none';
+    document.getElementById('projectDocumentsSection').style.display = 'none';
     
     // Disable input
     const messageInput = document.getElementById('messageInput');
@@ -343,11 +357,93 @@ async function saveProject() {
     }
 }
 
+// NEW: Delete project function
+async function deleteProject(projectId, projectName) {
+    if (!confirm(`Sei sicuro di voler eliminare il progetto "${projectName}"? Questa azione eliminerà anche tutte le conversazioni e documenti associati.`)) {
+        return;
+    }
+    
+    if (!window.supabase) return;
+    
+    try {
+        console.log('🗑️ Eliminazione progetto:', projectId);
+        
+        const { error } = await window.supabase
+            .from('projects')
+            .delete()
+            .eq('id', projectId);
+
+        if (error) {
+            console.error('Error deleting project:', error);
+            alert('❌ Errore nell\'eliminare il progetto');
+            return;
+        }
+
+        // If this was the active project, clear it
+        if (currentProject === projectId) {
+            currentProject = null;
+            showWelcomeState();
+        }
+
+        await loadUserData();
+        console.log('✅ Progetto eliminato');
+        
+    } catch (error) {
+        console.error('Exception deleting project:', error);
+        alert('❌ Errore nell\'eliminare il progetto');
+    }
+}
+
+// NEW: Rename project function
+async function renameProject(projectId) {
+    const newName = prompt('Nuovo nome per il progetto:');
+    if (!newName || !window.supabase) return;
+    
+    try {
+        const { error } = await window.supabase
+            .from('projects')
+            .update({ 
+                name: newName.trim(),
+                updated_at: new Date().toISOString() 
+            })
+            .eq('id', projectId);
+
+        if (error) {
+            console.error('Error renaming project:', error);
+            alert('❌ Errore nel rinominare il progetto');
+            return;
+        }
+
+        await loadUserData();
+        console.log('✅ Progetto rinominato');
+        
+    } catch (error) {
+        console.error('Exception renaming project:', error);
+    }
+}
+
 async function loadUserData() {
     if (!currentUser || !window.supabase) return;
 
     try {
         console.log('📊 Caricamento dati utente...');
+        
+        // Load user settings
+        const { data: settings, error: settingsError } = await window.supabase
+            .from('user_settings')
+            .select('*')
+            .eq('user_id', currentUser.id)
+            .single();
+
+        if (settingsError && settingsError.code !== 'PGRST116') {
+            console.error('Error loading settings:', settingsError);
+        } else if (settings) {
+            userSettings = {
+                apiSpendingLimit: parseFloat(settings.api_spending_limit),
+                apiWarningThreshold: parseFloat(settings.api_warning_threshold)
+            };
+            console.log('✅ Impostazioni caricate:', userSettings);
+        }
         
         // Load projects
         const { data: projects, error: projectsError } = await window.supabase
@@ -378,6 +474,11 @@ async function loadUserData() {
             console.log('✅ Conversazioni caricate:', conversations.length);
             renderConversations();
         }
+
+        // Load project documents if a project is selected
+        if (currentProject) {
+            await loadProjectDocuments();
+        }
         
     } catch (error) {
         console.error('Exception loading user data:', error);
@@ -404,16 +505,30 @@ function renderProjects(projects) {
         projectDiv.className = 'project-item';
         projectDiv.dataset.id = project.id;
         
+        if (currentProject === project.id) {
+            projectDiv.classList.add('active');
+        }
+        
         projectDiv.innerHTML = `
             <i class="fas fa-folder project-icon"></i>
             <div class="project-details">
                 <div class="project-title">${project.name}</div>
                 <div class="project-meta">0 conversazioni</div>
             </div>
+            <div class="project-actions">
+                <button class="project-action" onclick="renameProject(${project.id})" title="Rinomina">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button class="project-action" onclick="deleteProject(${project.id}, '${project.name}')" title="Elimina">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
         `;
         
-        projectDiv.addEventListener('click', function() {
-            selectProject(project.id, project.name);
+        projectDiv.addEventListener('click', function(e) {
+            if (!e.target.closest('.project-actions')) {
+                selectProject(project.id, project.name);
+            }
         });
         
         projectsList.appendChild(projectDiv);
@@ -434,8 +549,231 @@ function selectProject(projectId, projectName) {
         selectedElement.classList.add('active');
     }
     
+    // Show project documents section
+    document.getElementById('projectDocumentsSection').style.display = 'block';
+    
+    // Load project documents
+    loadProjectDocuments();
+    
     // Filter conversations by project
     renderConversations();
+}
+
+// NEW: Project Documents Management
+async function loadProjectDocuments() {
+    if (!currentProject || !window.supabase) return;
+    
+    try {
+        const { data: docs, error } = await window.supabase
+            .from('project_documents')
+            .select('*')
+            .eq('project_id', currentProject)
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error('Error loading project documents:', error);
+            return;
+        }
+
+        projectDocuments = docs || [];
+        console.log('📄 Documenti progetto caricati:', projectDocuments.length);
+        renderProjectDocuments();
+        
+    } catch (error) {
+        console.error('Exception loading project documents:', error);
+    }
+}
+
+function renderProjectDocuments() {
+    const docsList = document.getElementById('projectDocumentsList');
+    if (!docsList) return;
+    
+    docsList.innerHTML = '';
+
+    if (projectDocuments.length === 0) {
+        docsList.innerHTML = `
+            <div style="text-align: center; padding: 16px; color: var(--text-tertiary); font-size: 12px;">
+                Nessun documento nel progetto
+            </div>
+        `;
+        return;
+    }
+
+    projectDocuments.forEach(doc => {
+        const docDiv = document.createElement('div');
+        docDiv.className = 'document-item';
+        
+        docDiv.innerHTML = `
+            <div class="document-icon">
+                <i class="fas fa-file-alt"></i>
+            </div>
+            <div class="document-details">
+                <div class="document-title">${doc.name}</div>
+                <div class="document-meta">${formatFileSize(doc.size || 0)} • ${new Date(doc.created_at).toLocaleDateString()}</div>
+            </div>
+            <div class="document-actions">
+                <button class="document-action" onclick="downloadDocument('${doc.id}')" title="Scarica">
+                    <i class="fas fa-download"></i>
+                </button>
+                <button class="document-action" onclick="deleteDocument('${doc.id}')" title="Elimina">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        `;
+        
+        docsList.appendChild(docDiv);
+    });
+}
+
+async function uploadProjectDocument() {
+    if (!currentProject) {
+        alert('⚠️ Seleziona prima un progetto');
+        return;
+    }
+    
+    document.getElementById('projectFileUploadModal').style.display = 'block';
+}
+
+function closeProjectFileUpload() {
+    document.getElementById('projectFileUploadModal').style.display = 'none';
+    // Reset file input
+    document.getElementById('projectFileInput').value = '';
+}
+
+async function handleProjectFileSelect(e) {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+    
+    for (const file of files) {
+        if (file.size > 10 * 1024 * 1024) { // 10MB limit
+            alert(`File ${file.name} è troppo grande (max 10MB)`);
+            continue;
+        }
+        
+        try {
+            await uploadFileToProject(file);
+        } catch (error) {
+            console.error('Error uploading file:', file.name, error);
+            alert(`Errore nel caricare ${file.name}`);
+        }
+    }
+    
+    closeProjectFileUpload();
+    await loadProjectDocuments();
+}
+
+async function uploadFileToProject(file) {
+    if (!currentProject || !currentUser || !window.supabase) return;
+    
+    try {
+        // Read file content
+        const content = await readFileContent(file);
+        
+        // Upload to Supabase Storage
+        const fileName = `${currentUser.id}/${currentProject}/${Date.now()}-${file.name}`;
+        const { data: uploadData, error: uploadError } = await window.supabase.storage
+            .from('project-documents')
+            .upload(fileName, file);
+
+        if (uploadError) {
+            console.error('Storage upload error:', uploadError);
+            throw uploadError;
+        }
+
+        // Save metadata to database
+        const { error: dbError } = await window.supabase
+            .from('project_documents')
+            .insert([{
+                project_id: currentProject,
+                user_id: currentUser.id,
+                name: file.name,
+                content: content,
+                file_path: fileName,
+                size: file.size,
+                mime_type: file.type,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            }]);
+
+        if (dbError) {
+            console.error('Database insert error:', dbError);
+            throw dbError;
+        }
+
+        console.log('✅ Documento caricato:', file.name);
+        
+    } catch (error) {
+        console.error('Exception uploading file:', error);
+        throw error;
+    }
+}
+
+async function downloadDocument(docId) {
+    const doc = projectDocuments.find(d => d.id === parseInt(docId));
+    if (!doc || !window.supabase) return;
+    
+    try {
+        const { data, error } = await window.supabase.storage
+            .from('project-documents')
+            .download(doc.file_path);
+
+        if (error) {
+            console.error('Download error:', error);
+            alert('❌ Errore nel download del documento');
+            return;
+        }
+
+        // Create download link
+        const url = URL.createObjectURL(data);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = doc.name;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+    } catch (error) {
+        console.error('Exception downloading document:', error);
+        alert('❌ Errore nel download del documento');
+    }
+}
+
+async function deleteDocument(docId) {
+    const doc = projectDocuments.find(d => d.id === parseInt(docId));
+    if (!doc || !confirm(`Sei sicuro di voler eliminare "${doc.name}"?`)) return;
+    
+    if (!window.supabase) return;
+    
+    try {
+        // Delete from storage
+        const { error: storageError } = await window.supabase.storage
+            .from('project-documents')
+            .remove([doc.file_path]);
+
+        if (storageError) {
+            console.error('Storage delete error:', storageError);
+        }
+
+        // Delete from database
+        const { error: dbError } = await window.supabase
+            .from('project_documents')
+            .delete()
+            .eq('id', docId);
+
+        if (dbError) {
+            console.error('Database delete error:', dbError);
+            alert('❌ Errore nell\'eliminare il documento');
+            return;
+        }
+
+        await loadProjectDocuments();
+        console.log('✅ Documento eliminato');
+        
+    } catch (error) {
+        console.error('Exception deleting document:', error);
+        alert('❌ Errore nell\'eliminare il documento');
+    }
 }
 
 function renderConversations() {
@@ -591,6 +929,9 @@ async function loadConversation(conversationId) {
         messages.forEach(message => {
             addMessageToChat(message.content, message.role, false);
         });
+
+        // Load artifacts for this conversation
+        await loadConversationArtifacts(conversationId);
         
         console.log('✅ Messaggi caricati:', messages.length);
         
@@ -633,6 +974,12 @@ async function deleteConversation(conversationId) {
             .delete()
             .eq('conversation_id', conversationId);
         
+        // Delete artifacts
+        await window.supabase
+            .from('artifacts')
+            .delete()
+            .eq('conversation_id', conversationId);
+        
         // Delete conversation
         const { error } = await window.supabase
             .from('conversations')
@@ -658,6 +1005,305 @@ async function deleteConversation(conversationId) {
     }
 }
 
+// NEW: Artifacts Management
+async function loadConversationArtifacts(conversationId) {
+    if (!window.supabase) return;
+    
+    try {
+        const { data: arts, error } = await window.supabase
+            .from('artifacts')
+            .select('*')
+            .eq('conversation_id', conversationId)
+            .order('created_at', { ascending: true });
+
+        if (error) {
+            console.error('Error loading artifacts:', error);
+            return;
+        }
+
+        artifacts = arts || [];
+        console.log('🎨 Artifacts caricati:', artifacts.length);
+        
+        // Render existing artifacts in chat
+        artifacts.forEach(artifact => {
+            renderArtifactInChat(artifact);
+        });
+        
+    } catch (error) {
+        console.error('Exception loading artifacts:', error);
+    }
+}
+
+function detectArtifactInMessage(content) {
+    // Detect if Claude wants to create an artifact
+    const artifactPatterns = [
+        /```html/i,
+        /```javascript/i,
+        /```python/i,
+        /```json/i,
+        /```css/i,
+        /```react/i,
+        /I'll create.*for you/i,
+        /Here's.*code/i,
+        /Let me create/i
+    ];
+    
+    return artifactPatterns.some(pattern => pattern.test(content));
+}
+
+function extractArtifactFromMessage(content) {
+    // Extract code blocks and determine type
+    const codeBlockRegex = /```(\w+)?\n?([\s\S]*?)```/g;
+    const matches = [...content.matchAll(codeBlockRegex)];
+    
+    if (matches.length === 0) return null;
+    
+    const match = matches[0];
+    const language = match[1] || 'text';
+    const code = match[2].trim();
+    
+    // Determine artifact type
+    let type = 'code';
+    let title = 'Code Snippet';
+    
+    if (language.toLowerCase() === 'html' || code.includes('<html>')) {
+        type = 'html';
+        title = 'HTML Document';
+    } else if (language.toLowerCase() === 'javascript' || language.toLowerCase() === 'js') {
+        type = 'javascript';
+        title = 'JavaScript Code';
+    } else if (language.toLowerCase() === 'python' || language.toLowerCase() === 'py') {
+        type = 'python';
+        title = 'Python Script';
+    } else if (language.toLowerCase() === 'json') {
+        type = 'json';
+        title = 'JSON Data';
+    } else if (language.toLowerCase() === 'css') {
+        type = 'css';
+        title = 'CSS Styles';
+    } else if (language.toLowerCase() === 'react' || code.includes('React') || code.includes('jsx')) {
+        type = 'react';
+        title = 'React Component';
+    }
+    
+    return {
+        type: type,
+        title: title,
+        content: code
+    };
+}
+
+async function saveArtifact(artifactData) {
+    if (!currentConversation || !window.supabase) return null;
+    
+    try {
+        const { data, error } = await window.supabase
+            .from('artifacts')
+            .insert([{
+                conversation_id: currentConversation,
+                user_id: currentUser.id,
+                type: artifactData.type,
+                title: artifactData.title,
+                content: artifactData.content,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            }])
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Error saving artifact:', error);
+            return null;
+        }
+
+        console.log('✅ Artifact salvato:', data.id);
+        return data;
+        
+    } catch (error) {
+        console.error('Exception saving artifact:', error);
+        return null;
+    }
+}
+
+function renderArtifactInChat(artifact) {
+    const messagesContainer = document.getElementById('messagesContainer');
+    if (!messagesContainer) return;
+    
+    const artifactDiv = document.createElement('div');
+    artifactDiv.className = 'artifact-container';
+    artifactDiv.innerHTML = `
+        <div class="artifact-header">
+            <div class="artifact-info">
+                <i class="fas fa-code artifact-icon"></i>
+                <div class="artifact-details">
+                    <div class="artifact-title">${artifact.title}</div>
+                    <div class="artifact-type">${artifact.type.toUpperCase()}</div>
+                </div>
+            </div>
+            <div class="artifact-actions">
+                <button class="artifact-action" onclick="viewArtifact(${artifact.id})" title="Visualizza">
+                    <i class="fas fa-eye"></i>
+                </button>
+                <button class="artifact-action" onclick="editArtifact(${artifact.id})" title="Modifica">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button class="artifact-action" onclick="downloadArtifact(${artifact.id})" title="Scarica">
+                    <i class="fas fa-download"></i>
+                </button>
+            </div>
+        </div>
+        <div class="artifact-preview" id="artifact-preview-${artifact.id}">
+            ${renderArtifactPreview(artifact)}
+        </div>
+    `;
+    
+    messagesContainer.appendChild(artifactDiv);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+function renderArtifactPreview(artifact) {
+    switch (artifact.type) {
+        case 'html':
+            return `<iframe class="artifact-iframe" srcdoc="${escapeHtml(artifact.content)}" sandbox="allow-scripts"></iframe>`;
+        case 'javascript':
+        case 'python':
+        case 'json':
+        case 'css':
+            return `<pre class="artifact-code"><code class="language-${artifact.type}">${escapeHtml(artifact.content)}</code></pre>`;
+        case 'react':
+            return `<div class="artifact-react-info">React Component - Click "Visualizza" to render</div>`;
+        default:
+            return `<pre class="artifact-code"><code>${escapeHtml(artifact.content)}</code></pre>`;
+    }
+}
+
+function escapeHtml(unsafe) {
+    return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+function viewArtifact(artifactId) {
+    const artifact = artifacts.find(a => a.id === artifactId);
+    if (!artifact) return;
+    
+    document.getElementById('artifactViewerModal').style.display = 'block';
+    document.getElementById('artifactViewerTitle').textContent = artifact.title;
+    
+    const viewer = document.getElementById('artifactViewer');
+    
+    switch (artifact.type) {
+        case 'html':
+            viewer.innerHTML = `<iframe class="artifact-viewer-iframe" srcdoc="${escapeHtml(artifact.content)}" sandbox="allow-scripts allow-same-origin"></iframe>`;
+            break;
+        case 'react':
+            // For React components, we'd need a more complex setup
+            viewer.innerHTML = `<div class="artifact-react-notice">React components require a development environment to render properly.</div><pre><code class="language-javascript">${escapeHtml(artifact.content)}</code></pre>`;
+            break;
+        default:
+            viewer.innerHTML = `<pre><code class="language-${artifact.type}">${escapeHtml(artifact.content)}</code></pre>`;
+    }
+}
+
+function editArtifact(artifactId) {
+    const artifact = artifacts.find(a => a.id === artifactId);
+    if (!artifact) return;
+    
+    document.getElementById('artifactEditorModal').style.display = 'block';
+    document.getElementById('artifactEditorTitle').value = artifact.title;
+    document.getElementById('artifactEditorType').value = artifact.type;
+    document.getElementById('artifactEditorContent').value = artifact.content;
+    document.getElementById('artifactEditorModal').dataset.artifactId = artifactId;
+}
+
+async function saveEditedArtifact() {
+    const modal = document.getElementById('artifactEditorModal');
+    const artifactId = modal.dataset.artifactId;
+    
+    const title = document.getElementById('artifactEditorTitle').value.trim();
+    const type = document.getElementById('artifactEditorType').value;
+    const content = document.getElementById('artifactEditorContent').value.trim();
+    
+    if (!title || !content || !window.supabase) return;
+    
+    try {
+        const { error } = await window.supabase
+            .from('artifacts')
+            .update({
+                title: title,
+                type: type,
+                content: content,
+                updated_at: new Date().toISOString()
+            })
+            .eq('id', artifactId);
+
+        if (error) {
+            console.error('Error updating artifact:', error);
+            alert('❌ Errore nel salvare l\'artifact');
+            return;
+        }
+
+        // Update local data
+        const artifactIndex = artifacts.findIndex(a => a.id === parseInt(artifactId));
+        if (artifactIndex !== -1) {
+            artifacts[artifactIndex] = { ...artifacts[artifactIndex], title, type, content };
+        }
+
+        // Update preview
+        const preview = document.getElementById(`artifact-preview-${artifactId}`);
+        if (preview) {
+            preview.innerHTML = renderArtifactPreview(artifacts[artifactIndex]);
+        }
+
+        closeArtifactEditor();
+        console.log('✅ Artifact aggiornato');
+        
+    } catch (error) {
+        console.error('Exception updating artifact:', error);
+        alert('❌ Errore nel salvare l\'artifact');
+    }
+}
+
+function downloadArtifact(artifactId) {
+    const artifact = artifacts.find(a => a.id === artifactId);
+    if (!artifact) return;
+    
+    const filename = `${artifact.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.${getFileExtension(artifact.type)}`;
+    const blob = new Blob([artifact.content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+function getFileExtension(type) {
+    const extensions = {
+        'html': 'html',
+        'javascript': 'js',
+        'python': 'py',
+        'json': 'json',
+        'css': 'css',
+        'react': 'jsx'
+    };
+    return extensions[type] || 'txt';
+}
+
+function closeArtifactViewer() {
+    document.getElementById('artifactViewerModal').style.display = 'none';
+}
+
+function closeArtifactEditor() {
+    document.getElementById('artifactEditorModal').style.display = 'none';
+}
+
 // Message handling
 async function sendMessage() {
     if (!apiKey || !isConnected) {
@@ -668,6 +1314,12 @@ async function sendMessage() {
 
     if (!currentUser) {
         alert('⚠️ Devi essere connesso');
+        return;
+    }
+
+    // Check API spending limit
+    if (sessionStats.estimatedCost >= userSettings.apiSpendingLimit) {
+        alert(`⚠️ Hai raggiunto il limite di spesa di ${userSettings.apiSpendingLimit.toFixed(2)}. Aumenta il limite nelle impostazioni.`);
         return;
     }
 
@@ -694,13 +1346,21 @@ async function sendMessage() {
         // Show typing
         showTypingIndicator();
 
-        // Prepare context with uploaded files
+        // Prepare context with project documents
         let contextMessage = message;
+        if (currentProject && projectDocuments.length > 0) {
+            const docsContext = projectDocuments.map(doc => 
+                `[Documento: ${doc.name}]\n${doc.content || '[Contenuto non disponibile]'}`
+            ).join('\n\n');
+            contextMessage = `${docsContext}\n\nUser message: ${message}`;
+        }
+
+        // Add uploaded files to context
         if (uploadedFiles.length > 0) {
             const filesContext = uploadedFiles.map(file => 
                 `[File: ${file.name}]\n${file.content || '[File content not available]'}`
             ).join('\n\n');
-            contextMessage = `${filesContext}\n\nUser message: ${message}`;
+            contextMessage = `${filesContext}\n\n${contextMessage}`;
         }
 
         // Call Claude API
@@ -710,9 +1370,29 @@ async function sendMessage() {
         
         if (response) {
             addMessageToChat(response, 'assistant', true);
+            
+            // Check if response contains an artifact
+            if (detectArtifactInMessage(response)) {
+                const artifactData = extractArtifactFromMessage(response);
+                if (artifactData) {
+                    const savedArtifact = await saveArtifact(artifactData);
+                    if (savedArtifact) {
+                        artifacts.push(savedArtifact);
+                        renderArtifactInChat(savedArtifact);
+                    }
+                }
+            }
+            
             await saveMessages(message, response);
             // Update statistics
-updateStats(message, response);
+            updateStats(message, response);
+            
+            // Check spending warning
+            if (sessionStats.estimatedCost >= userSettings.apiWarningThreshold && 
+                sessionStats.estimatedCost < userSettings.apiSpendingLimit) {
+                showSpendingWarning();
+            }
+            
             // Update conversation title if it's the first message
             await updateConversationTitle(message);
             
@@ -724,6 +1404,26 @@ updateStats(message, response);
         hideTypingIndicator();
         addMessageToChat('❌ Errore nella comunicazione con Claude. Riprova.', 'assistant', true);
     }
+}
+
+function showSpendingWarning() {
+    const notification = document.createElement('div');
+    notification.className = 'spending-warning';
+    notification.innerHTML = `
+        <div class="warning-content">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span>Attenzione: hai raggiunto ${sessionStats.estimatedCost.toFixed(2)} di ${userSettings.apiSpendingLimit.toFixed(2)}</span>
+            <button onclick="this.parentElement.parentElement.remove()">×</button>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.remove();
+        }
+    }, 5000);
 }
 
 async function callClaudeAPI(message) {
@@ -879,9 +1579,14 @@ function clearMessages() {
 function setupFileUpload() {
     const fileInput = document.getElementById('fileInput');
     const uploadZone = document.getElementById('uploadZone');
+    const projectFileInput = document.getElementById('projectFileInput');
     
     if (fileInput) {
         fileInput.addEventListener('change', handleFileSelect);
+    }
+
+    if (projectFileInput) {
+        projectFileInput.addEventListener('change', handleProjectFileSelect);
     }
     
     if (uploadZone) {
@@ -1039,7 +1744,7 @@ function confirmFileUpload() {
 }
 
 function formatFileSize(bytes) {
-    if (bytes === 0) return '0 Bytes';
+    if (bytes === 0 || !bytes) return '0 Bytes';
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
@@ -1078,6 +1783,10 @@ function hideTypingIndicator() {
 function openSettings() {
     document.getElementById('settingsModal').style.display = 'block';
     document.getElementById('apiKeyInput').focus();
+    
+    // Load current settings
+    document.getElementById('spendingLimitInput').value = userSettings.apiSpendingLimit;
+    document.getElementById('warningThresholdInput').value = userSettings.apiWarningThreshold;
 }
 
 function closeSettings() {
@@ -1144,21 +1853,107 @@ function updateConnectionStatus(connected) {
     }
 }
 
-function saveSettings() {
+async function saveSettings() {
     const newApiKey = document.getElementById('apiKeyInput').value.trim();
+    const spendingLimit = parseFloat(document.getElementById('spendingLimitInput').value) || 10.00;
+    const warningThreshold = parseFloat(document.getElementById('warningThresholdInput').value) || 8.00;
     
     if (!newApiKey) {
         alert('❌ Inserisci una API key valida');
         return;
     }
 
+    if (warningThreshold >= spendingLimit) {
+        alert('❌ La soglia di avviso deve essere inferiore al limite di spesa');
+        return;
+    }
+
+    // Save API key locally
     apiKey = newApiKey;
     localStorage.setItem('claude-api-key', apiKey);
     
+    // Save user settings to database
+    if (currentUser && window.supabase) {
+        try {
+            const { error } = await window.supabase
+                .from('user_settings')
+                .upsert([{
+                    user_id: currentUser.id,
+                    api_spending_limit: spendingLimit,
+                    api_warning_threshold: warningThreshold,
+                    updated_at: new Date().toISOString()
+                }]);
+
+            if (error) {
+                console.error('Error saving settings:', error);
+            } else {
+                userSettings = {
+                    apiSpendingLimit: spendingLimit,
+                    apiWarningThreshold: warningThreshold
+                };
+                console.log('✅ Impostazioni salvate');
+            }
+        } catch (error) {
+            console.error('Exception saving settings:', error);
+        }
+    }
+    
     testConnection();
     closeSettings();
+}
+
+// Statistics functions
+function estimateTokens(text) {
+    // Rough estimation: ~4 characters per token
+    return Math.ceil(text.length / 4);
+}
+
+function updateStats(userMessage, assistantMessage) {
+    const userTokens = estimateTokens(userMessage);
+    const assistantTokens = estimateTokens(assistantMessage);
+    const totalTokens = userTokens + assistantTokens;
     
-    console.log('💾 Impostazioni salvate');
+    sessionStats.tokensUsed += totalTokens;
+    sessionStats.messagesSent += 1;
+    
+    // Cost estimation (Claude pricing: ~$0.0015 per 1000 tokens for input, ~$0.0075 for output)
+    const inputCost = (userTokens / 1000) * 0.0015;
+    const outputCost = (assistantTokens / 1000) * 0.0075;
+    sessionStats.estimatedCost += inputCost + outputCost;
+    
+    updateStatsDisplay();
+    console.log('📊 Stats updated:', sessionStats);
+}
+
+function updateStatsDisplay() {
+    document.getElementById('tokensUsed').textContent = sessionStats.tokensUsed.toLocaleString();
+    document.getElementById('messagesSent').textContent = sessionStats.messagesSent;
+    document.getElementById('estimatedCost').textContent = ' + sessionStats.estimatedCost.toFixed(4);
+    
+    // Update progress bar if close to limit
+    const progressBar = document.getElementById('spendingProgress');
+    if (progressBar) {
+        const percentage = (sessionStats.estimatedCost / userSettings.apiSpendingLimit) * 100;
+        progressBar.style.width = Math.min(percentage, 100) + '%';
+        
+        if (percentage >= 80) {
+            progressBar.classList.add('warning');
+        } else if (percentage >= 95) {
+            progressBar.classList.add('danger');
+        }
+    }
+}
+
+function resetStats() {
+    if (confirm('Vuoi resettare le statistiche della sessione?')) {
+        sessionStats = {
+            tokensUsed: 0,
+            messagesSent: 0,
+            estimatedCost: 0
+        };
+        updateStatsDisplay();
+        console.log('📊 Stats reset');
+    }
 }
 
 // Keyboard shortcuts
@@ -1175,6 +1970,16 @@ document.addEventListener('keydown', function(e) {
     if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'O') {
         e.preventDefault();
         openSettings();
+    }
+    
+    // Ctrl/Cmd + U for upload
+    if ((e.ctrlKey || e.metaKey) && e.key === 'u') {
+        e.preventDefault();
+        if (currentProject) {
+            uploadProjectDocument();
+        } else {
+            triggerFileUpload();
+        }
     }
     
     // Escape to close modals
@@ -1293,9 +2098,13 @@ if (typeof window !== 'undefined') {
         currentConversation,
         conversations,
         uploadedFiles,
+        projectDocuments,
+        artifacts,
         apiKey: apiKey ? 'SET' : 'NOT_SET',
         isConnected,
         performanceMetrics,
+        userSettings,
+        sessionStats,
         
         // Debug functions
         clearAllData: function() {
@@ -1314,47 +2123,14 @@ if (typeof window !== 'undefined') {
                 conversation: currentConversation,
                 conversationsCount: conversations.length,
                 filesCount: uploadedFiles.length,
-                connected: isConnected
+                projectDocsCount: projectDocuments.length,
+                artifactsCount: artifacts.length,
+                connected: isConnected,
+                settings: userSettings,
+                stats: sessionStats
             });
         }
     };
 }
-// Statistics functions
-function estimateTokens(text) {
-    // Rough estimation: ~4 characters per token
-    return Math.ceil(text.length / 4);
-}
 
-function updateStats(userMessage, assistantMessage) {
-    const userTokens = estimateTokens(userMessage);
-    const assistantTokens = estimateTokens(assistantMessage);
-    const totalTokens = userTokens + assistantTokens;
-    
-    sessionStats.tokensUsed += totalTokens;
-    sessionStats.messagesSent += 1;
-    
-    // Cost estimation (Claude pricing: ~$0.0015 per 1000 tokens)
-    sessionStats.estimatedCost = (sessionStats.tokensUsed / 1000) * 0.0015;
-    
-    updateStatsDisplay();
-    console.log('📊 Stats updated:', sessionStats);
-}
-
-function updateStatsDisplay() {
-    document.getElementById('tokensUsed').textContent = sessionStats.tokensUsed.toLocaleString();
-    document.getElementById('messagesSent').textContent = sessionStats.messagesSent;
-    document.getElementById('estimatedCost').textContent = '$' + sessionStats.estimatedCost.toFixed(4);
-}
-
-function resetStats() {
-    if (confirm('Vuoi resettare le statistiche della sessione?')) {
-        sessionStats = {
-            tokensUsed: 0,
-            messagesSent: 0,
-            estimatedCost: 0
-        };
-        updateStatsDisplay();
-        console.log('📊 Stats reset');
-    }
-}
 console.log('🚀 Claude AI Interface initialized successfully!');
