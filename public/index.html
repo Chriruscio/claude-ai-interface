@@ -37,22 +37,23 @@
 </head>
 <body>
     <div class="app-container">
-        <!-- Sidebar -->
+        <!-- Sidebar identica a Claude.ai -->
         <div class="sidebar" id="sidebar">
+            <!-- Header con logo -->
             <div class="sidebar-header">
                 <div class="logo">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                        <path d="M12 2L22 8.5V15.5L12 22L2 15.5V8.5L12 2Z" stroke="currentColor" stroke-width="2" fill="none"/>
-                        <path d="M8 12L10.5 14.5L16 9" stroke="currentColor" stroke-width="2" fill="none"/>
+                    <svg class="claude-logo" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                        <rect x="3" y="3" width="18" height="18" rx="4" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path d="m9 12 2 2 4-4" stroke="currentColor" stroke-width="2" fill="none"/>
                     </svg>
-                    <span>Claude</span>
+                    <span class="logo-text">Claude</span>
                 </div>
                 <button class="sidebar-toggle" id="sidebarToggle">
                     <i class="fas fa-chevron-left"></i>
                 </button>
             </div>
 
-            <!-- User Section -->
+            <!-- User login/info -->
             <div class="user-section">
                 <div class="login-section" id="loginSection">
                     <button class="login-btn" onclick="googleLogin()">
@@ -62,12 +63,26 @@
                 </div>
 
                 <div class="user-info" id="userInfo" style="display: none;">
-                    <div class="user-avatar-container">
+                    <div class="user-avatar-wrapper">
                         <img class="user-avatar" id="userAvatar" src="" alt="User">
                     </div>
                     <div class="user-details">
-                        <div id="userName" class="user-name"></div>
-                        <button class="logout-btn" onclick="logoutUser()">Disconnetti</button>
+                        <div class="user-name" id="userName"></div>
+                        <button class="user-menu-btn" onclick="toggleUserMenu()">
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- User dropdown menu -->
+                    <div class="user-menu" id="userMenu" style="display: none;">
+                        <button class="user-menu-item" onclick="openSettings()">
+                            <i class="fas fa-cog"></i>
+                            <span>Impostazioni</span>
+                        </button>
+                        <button class="user-menu-item" onclick="logoutUser()">
+                            <i class="fas fa-sign-out-alt"></i>
+                            <span>Disconnetti</span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -80,85 +95,163 @@
                 </button>
             </div>
 
-            <!-- Projects Section -->
+            <!-- Conversations list (come Claude.ai) -->
+            <div class="conversations-section" id="conversationsSection" style="display: none;">
+                <div class="conversations-header">
+                    <span>Oggi</span>
+                </div>
+                <div id="todayChats" class="conversations-list"></div>
+                
+                <div class="conversations-header">
+                    <span>Precedenti</span>
+                </div>
+                <div id="previousChats" class="conversations-list"></div>
+            </div>
+
+            <!-- Projects section (come organizzazione) -->
             <div class="projects-section" id="projectsSection" style="display: none;">
                 <div class="section-header">
                     <span>Progetti</span>
-                    <button class="new-project-btn" onclick="createProject()">
+                    <button class="add-btn" onclick="createProject()" title="Nuovo progetto">
                         <i class="fas fa-plus"></i>
                     </button>
                 </div>
                 <div id="projectsList" class="projects-list"></div>
             </div>
 
-            <!-- Settings -->
+            <!-- Sidebar footer -->
             <div class="sidebar-footer">
-                <button class="settings-btn" onclick="openSettings()">
-                    <i class="fas fa-cog"></i>
-                    <span>Impostazioni</span>
-                </button>
+                <div class="upgrade-section">
+                    <div class="plan-info">
+                        <span class="plan-name">Claude Pro</span>
+                        <span class="plan-status">Attivo</span>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- Main Content -->
+        <!-- Main content area -->
         <div class="main-content">
-            <!-- Header -->
-            <div class="chat-header">
-                <div class="model-info">
-                    <select class="model-selector" id="modelSelector">
-                        <option value="claude-sonnet-4-20250514">Claude 4 Sonnet</option>
-                        <option value="claude-opus-4">Claude 4 Opus</option>
-                    </select>
-                    <div class="status-indicator" id="statusIndicator"></div>
+            <!-- Top header identico a Claude.ai -->
+            <div class="main-header">
+                <div class="header-left">
+                    <button class="mobile-menu-btn" onclick="toggleSidebar()">
+                        <i class="fas fa-bars"></i>
+                    </button>
                 </div>
-                <div class="current-project" id="currentProject"></div>
+                
+                <div class="header-center">
+                    <div class="model-selector-wrapper">
+                        <select class="model-selector" id="modelSelector">
+                            <option value="claude-sonnet-4-20250514">Claude 4 Sonnet</option>
+                            <option value="claude-opus-4">Claude 4 Opus</option>
+                        </select>
+                        <div class="connection-status" id="connectionStatus">
+                            <div class="status-dot" id="statusDot"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="header-right">
+                    <button class="header-btn" onclick="openSettings()" title="Impostazioni">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                </div>
             </div>
 
-            <!-- Chat Container -->
-            <div class="chat-container" id="chatContainer">
-                <div class="welcome-message">
-                    <div class="claude-avatar">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
-                            <path d="M12 2L22 8.5V15.5L12 22L2 15.5V8.5L12 2Z" stroke="currentColor" stroke-width="2" fill="none"/>
-                            <path d="M8 12L10.5 14.5L16 9" stroke="currentColor" stroke-width="2" fill="none"/>
+            <!-- Chat area -->
+            <div class="chat-area">
+                <div class="chat-container" id="chatContainer">
+                    <!-- Welcome state -->
+                    <div class="welcome-state" id="welcomeState">
+                        <div class="claude-icon">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+                                <rect x="3" y="3" width="18" height="18" rx="4" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                                <path d="m9 12 2 2 4-4" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                            </svg>
+                        </div>
+                        <h1>Ciao, sono Claude</h1>
+                        <p>Come posso aiutarti oggi?</p>
+                        
+                        <!-- Suggestion cards -->
+                        <div class="suggestion-cards">
+                            <div class="suggestion-card" onclick="sendSuggestion('Aiutami a scrivere una email professionale')">
+                                <i class="fas fa-envelope"></i>
+                                <span>Scrivi una email</span>
+                            </div>
+                            <div class="suggestion-card" onclick="sendSuggestion('Analizza questo documento')">
+                                <i class="fas fa-file-alt"></i>
+                                <span>Analizza documento</span>
+                            </div>
+                            <div class="suggestion-card" onclick="sendSuggestion('Aiutami con la programmazione')">
+                                <i class="fas fa-code"></i>
+                                <span>Programmazione</span>
+                            </div>
+                            <div class="suggestion-card" onclick="sendSuggestion('Spiegami un concetto complesso')">
+                                <i class="fas fa-lightbulb"></i>
+                                <span>Spiegazione</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Messages container -->
+                    <div class="messages-container" id="messagesContainer" style="display: none;">
+                        <!-- I messaggi verranno inseriti qui -->
+                    </div>
+                </div>
+
+                <!-- Typing indicator -->
+                <div class="typing-indicator" id="typingIndicator">
+                    <div class="typing-avatar">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <rect x="3" y="3" width="18" height="18" rx="4" stroke="currentColor" stroke-width="1.5" fill="none"/>
                         </svg>
                     </div>
-                    <h1>Ciao, sono Claude</h1>
-                    <p>Come posso aiutarti oggi?</p>
-                </div>
-            </div>
-
-            <!-- Typing Indicator -->
-            <div class="typing-indicator" id="typingIndicator">
-                <div class="message-avatar assistant-avatar">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                        <path d="M12 2L22 8.5V15.5L12 22L2 15.5V8.5L12 2Z" stroke="currentColor" stroke-width="2" fill="none"/>
-                    </svg>
-                </div>
-                <div class="typing-dots">
-                    <div class="typing-dot"></div>
-                    <div class="typing-dot"></div>
-                    <div class="typing-dot"></div>
-                </div>
-            </div>
-
-            <!-- Input Area -->
-            <div class="input-area">
-                <div class="input-container">
-                    <div class="input-wrapper">
-                        <textarea 
-                            class="message-input" 
-                            id="messageInput" 
-                            placeholder="Scrivi un messaggio a Claude..." 
-                            rows="1" 
-                            disabled
-                        ></textarea>
-                        <button class="send-button" id="sendButton" disabled>
-                            <i class="fas fa-arrow-up"></i>
-                        </button>
+                    <div class="typing-dots">
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
+                        <div class="typing-dot"></div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Input area identica a Claude.ai -->
+            <div class="input-section">
+                <div class="input-container">
+                    <!-- File upload area -->
+                    <div class="file-upload-area" id="fileUploadArea" style="display: none;">
+                        <div class="uploaded-files" id="uploadedFiles"></div>
+                    </div>
+
+                    <!-- Input box -->
+                    <div class="input-box">
+                        <div class="input-actions-left">
+                            <button class="input-btn" onclick="triggerFileUpload()" title="Allega file">
+                                <i class="fas fa-paperclip"></i>
+                            </button>
+                            <input type="file" id="fileInput" multiple accept=".txt,.pdf,.doc,.docx,.md" style="display: none;">
+                        </div>
+
+                        <div class="input-wrapper">
+                            <textarea 
+                                class="message-input" 
+                                id="messageInput" 
+                                placeholder="Scrivi un messaggio a Claude..." 
+                                rows="1"
+                                disabled
+                            ></textarea>
+                        </div>
+
+                        <div class="input-actions-right">
+                            <button class="send-btn" id="sendButton" disabled>
+                                <i class="fas fa-arrow-up"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Footer info -->
                     <div class="input-footer">
-                        <span class="model-info-text">Claude può commettere errori. Controlla le informazioni importanti.</span>
+                        <span>Claude può commettere errori. Controlla le informazioni importanti.</span>
                     </div>
                 </div>
             </div>
@@ -166,54 +259,95 @@
     </div>
 
     <!-- Modals -->
+    
+    <!-- Settings Modal -->
     <div class="modal" id="settingsModal">
+        <div class="modal-backdrop" onclick="closeSettings()"></div>
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Impostazioni API</h3>
+                <h2>Impostazioni</h2>
                 <button class="modal-close" onclick="closeSettings()">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
             <div class="modal-body">
-                <div class="form-group">
-                    <label class="form-label">API Key Anthropic</label>
-                    <input type="password" class="form-input" id="apiKeyInput" placeholder="sk-ant-...">
-                    <small class="form-help">La tua chiave API rimarrà salvata localmente nel browser</small>
+                <div class="settings-section">
+                    <h3>API Configuration</h3>
+                    <div class="form-group">
+                        <label>API Key Anthropic</label>
+                        <div class="input-with-button">
+                            <input type="password" id="apiKeyInput" placeholder="sk-ant-..." class="form-input">
+                            <button class="test-btn" onclick="testConnection()">Test</button>
+                        </div>
+                        <small>La tua chiave API viene salvata solo localmente</small>
+                    </div>
                 </div>
-                <div class="modal-actions">
-                    <button class="btn btn-secondary" onclick="testConnection()">
-                        <i class="fas fa-flask"></i>
-                        Test connessione
-                    </button>
-                    <button class="btn btn-primary" onclick="saveSettings()">
-                        <i class="fas fa-save"></i>
-                        Salva
-                    </button>
+                
+                <div class="settings-section">
+                    <h3>Preferenze</h3>
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="darkModeToggle">
+                            <span>Tema scuro</span>
+                        </label>
+                    </div>
                 </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeSettings()">Annulla</button>
+                <button class="btn btn-primary" onclick="saveSettings()">Salva</button>
             </div>
         </div>
     </div>
 
+    <!-- Create Project Modal -->
     <div class="modal" id="createProjectModal">
+        <div class="modal-backdrop" onclick="closeCreateProject()"></div>
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Nuovo progetto</h3>
+                <h2>Nuovo progetto</h2>
                 <button class="modal-close" onclick="closeCreateProject()">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label class="form-label">Nome progetto</label>
-                    <input type="text" class="form-input" id="projectNameInput" placeholder="Il mio progetto">
+                    <label>Nome progetto</label>
+                    <input type="text" id="projectNameInput" placeholder="Il mio progetto" class="form-input">
                 </div>
-                <div class="modal-actions">
-                    <button class="btn btn-secondary" onclick="closeCreateProject()">Annulla</button>
-                    <button class="btn btn-primary" onclick="saveProject()">
-                        <i class="fas fa-folder-plus"></i>
-                        Crea progetto
-                    </button>
+                <div class="form-group">
+                    <label>Descrizione (opzionale)</label>
+                    <textarea id="projectDescInput" placeholder="Descrivi il tuo progetto..." class="form-input" rows="3"></textarea>
                 </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeCreateProject()">Annulla</button>
+                <button class="btn btn-primary" onclick="saveProject()">Crea progetto</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- File Upload Modal -->
+    <div class="modal" id="fileUploadModal">
+        <div class="modal-backdrop" onclick="closeFileUpload()"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Carica documenti</h2>
+                <button class="modal-close" onclick="closeFileUpload()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="upload-zone" id="uploadZone">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <p>Trascina i file qui o clicca per selezionare</p>
+                    <small>Supportati: PDF, TXT, DOC, DOCX, MD (max 10MB)</small>
+                </div>
+                <div class="uploaded-files-list" id="uploadedFilesList"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeFileUpload()">Annulla</button>
+                <button class="btn btn-primary" onclick="confirmFileUpload()">Carica</button>
             </div>
         </div>
     </div>
