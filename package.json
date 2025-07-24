@@ -1,33 +1,19 @@
 {
   "name": "claude-ai-interface",
   "version": "1.0.0",
-  "description": "Claude AI Interface with Firebase sync",
+  "description": "Claude AI Interface with full functionality",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "node server.js"
   },
   "dependencies": {
     "express": "^4.18.2",
     "cors": "^2.8.5",
-    "node-fetch": "^2.7.0",
-    "firebase-admin": "^12.0.0",
-    "multer": "^1.4.5-lts.1",
-    "uuid": "^9.0.1"
-  },
-  "devDependencies": {
-    "nodemon": "^3.0.2"
+    "node-fetch": "^3.3.2"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=16.0.0"
   },
-  "keywords": [
-    "claude",
-    "ai",
-    "interface", 
-    "firebase",
-    "chat"
-  ],
-  "author": "Your Name",
-  "license": "MIT"
+  "type": "commonjs"
 }
