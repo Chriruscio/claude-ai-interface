@@ -1792,6 +1792,35 @@ function closeSettings() {
 }
 
 async function testConnection() {
+    const testKey = document.getElementById('apiKeyInput').value.trim() || apiKey;
+    if (!testKey) {
+        updateConnectionStatus(false);
+        alert('❌ Inserisci prima una API key');
+        return;
+    }
+
+    try {
+        console.log('🧪 Test connessione API...');
+        
+        // Per il CORS, non possiamo testare direttamente dal browser
+        if (testKey.startsWith('sk-ant-')) {
+            updateConnectionStatus(true);
+            console.log('✅ API key format valido');
+            if (currentUser) {
+                document.getElementById('sendButton').disabled = false;
+            }
+            alert('✅ Formato API key valido! (Test completo sarà fatto al primo messaggio)');
+        } else {
+            updateConnectionStatus(false);
+            alert('❌ Formato API key non valido. Deve iniziare con "sk-ant-"');
+        }
+        
+    } catch (error) {
+        console.error('Test connection error:', error);
+        updateConnectionStatus(false);
+        alert('❌ Errore nel test API key');
+    }
+}
 
 function updateConnectionStatus(connected) {
     isConnected = connected;
