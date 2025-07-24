@@ -54,7 +54,6 @@ app.post('/api/test', async (req, res) => {
     }
 });
 
-// API chat endpoint  
 app.post('/api/chat', async (req, res) => {
     console.log('🎯 CHAT API HIT!', {
         method: req.method,
@@ -65,7 +64,14 @@ app.post('/api/chat', async (req, res) => {
     
     const { messages, model, apiKey } = req.body;
     
+    console.log('📝 Parsed data:', { 
+        hasMessages: !!messages, 
+        model, 
+        hasApiKey: !!apiKey 
+    });
+    
     if (!apiKey) {
+        console.log('❌ No API key');
         return res.status(400).json({ error: 'API key mancante' });
     }
     
@@ -75,8 +81,10 @@ app.post('/api/chat', async (req, res) => {
     };
     
     const claudeModel = modelMap[model] || 'claude-3-sonnet-20240229';
+    console.log('🤖 Using model:', claudeModel);
     
     try {
+        console.log('🚀 Starting API call...');
         const fetch = (await import('node-fetch')).default;
         const response = await fetch('https://api.anthropic.com/v1/messages', {
             method: 'POST',
@@ -92,18 +100,23 @@ app.post('/api/chat', async (req, res) => {
             })
         });
 
+        console.log('📡 API response status:', response.status);
+
         if (!response.ok) {
+            console.log('❌ API error response');
             const error = await response.json();
             return res.status(response.status).json({ 
                 error: error.error?.message || 'API Error' 
             });
         }
 
+        console.log('✅ API success, parsing data...');
         const data = await response.json();
+        console.log('📤 Sending response to client');
         res.json(data);
         
     } catch (error) {
-        console.error('API Error:', error);
+        console.error('💥 Exception in API call:', error);
         res.status(500).json({ error: error.message });
     }
 });
