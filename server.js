@@ -77,9 +77,9 @@ app.post('/api/chat', async (req, res) => {
     }
     
     const modelMap = {
-        'claude-sonnet-4-20250514': 'claude-3-sonnet-20240229',
-        'claude-opus-4': 'claude-3-opus-20240229'
-    };
+    'claude-sonnet-4-20250514': 'claude-sonnet-4-20250514',
+    'claude-opus-4': 'claude-opus-4-20250514'
+};
     
     const claudeModel = modelMap[model] || 'claude-3-sonnet-20240229';
     console.log('🤖 Using model:', claudeModel);
