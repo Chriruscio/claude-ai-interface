@@ -29,7 +29,7 @@ app.post('/api/test', async (req, res) => {
     
     try {
         const fetch = (await import('node-fetch')).default;
-        const response = await fetch('https://api.anthropic.com/v1/messages', {
+        const response = await fetch('https://api.anthropic.com/v1/complete', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -37,10 +37,11 @@ app.post('/api/test', async (req, res) => {
                 'anthropic-version': '2023-06-01'
             },
             body: JSON.stringify({
-                model: 'claude-3-sonnet-20240229',
-                max_tokens: 10,
-                messages: [{ role: 'user', content: 'Hi' }]
-            })
+    model: claudeModel,
+    max_tokens: 4000,
+    prompt: `Human: ${messages[0].content}\n\nAssistant:`,
+    stop_sequences: ["\n\nHuman:"]
+})
         });
 
         if (response.ok) {
