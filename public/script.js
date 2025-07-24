@@ -1426,32 +1426,24 @@ function showSpendingWarning() {
 }
 
 async function callClaudeAPI(message) {
-    const modelMap = {
-        'claude-sonnet-4-20250514': 'claude-3-sonnet-20240229',
-        'claude-opus-4': 'claude-3-opus-20240229'
-    };
-    
-    const selectedModel = document.getElementById('modelSelector').value;
-    const model = modelMap[selectedModel] || 'claude-3-sonnet-20240229';
+    const model = document.getElementById('modelSelector').value;
     
     try {
-        const response = await fetch('https://api.anthropic.com/v1/messages', {
+        const response = await fetch('/api/chat', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': apiKey,
-                'anthropic-version': '2023-06-01'
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify({
+                messages: [{ role: 'user', content: message }],
                 model: model,
-                max_tokens: 4000,
-                messages: [{ role: 'user', content: message }]
+                apiKey: apiKey
             })
         });
 
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.error?.message || `HTTP ${response.status}`);
+            throw new Error(errorData.error || `HTTP ${response.status}`);
         }
 
         const data = await response.json();
@@ -1459,6 +1451,10 @@ async function callClaudeAPI(message) {
         // Estrai il contenuto dalla risposta
         if (data.content && Array.isArray(data.content) && data.content[0] && data.content[0].text) {
             return data.content[0].text;
+        } else if (data.content && typeof data.content === 'string') {
+            return data.content;
+        } else if (data.content) {
+            return String(data.content);
         } else {
             throw new Error('Formato risposta non valido');
         }
