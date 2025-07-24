@@ -20,6 +20,7 @@ app.use((req, res, next) => {
 
 // API test endpoint
 app.post('/api/test', async (req, res) => {
+    console.log('🧪 TEST API HIT!', req.body);
     const { apiKey } = req.body;
     
     if (!apiKey || !apiKey.startsWith('sk-ant-')) {
@@ -55,6 +56,13 @@ app.post('/api/test', async (req, res) => {
 
 // API chat endpoint  
 app.post('/api/chat', async (req, res) => {
+    console.log('🎯 CHAT API HIT!', {
+        method: req.method,
+        path: req.path,
+        hasBody: !!req.body,
+        bodyKeys: Object.keys(req.body || {})
+    });
+    
     const { messages, model, apiKey } = req.body;
     
     if (!apiKey) {
@@ -107,8 +115,12 @@ app.get('/', (req, res) => {
     res.sendFile(path.resolve('/app/public', 'index.html'));
 });
 
-// Fallback per tutti gli altri percorsi (DEVE ESSERE L'ULTIMO!)
+// Fallback SOLO per le richieste GET che non matchano (DEVE ESSERE L'ULTIMO!)
 app.get('*', (req, res) => {
+    // Non intercettare le API routes
+    if (req.path.startsWith('/api/')) {
+        return res.status(404).json({ error: 'API endpoint not found' });
+    }
     res.sendFile(path.resolve('/app/public', 'index.html'));
 });
 
