@@ -112,9 +112,15 @@ app.post('/api/chat', async (req, res) => {
         }
 
         console.log('✅ API success, parsing data...');
-        const data = await response.json();
-        console.log('📤 Sending response to client');
-        res.json(data);
+const data = await response.json();
+
+// 🔍 DEBUG COMPLETO
+console.log('🔍 FULL API RESPONSE:', JSON.stringify(data, null, 2));
+console.log('🎯 Model used in response:', data.model);
+console.log('📋 Response content preview:', data.content?.[0]?.text?.substring(0, 200));
+
+console.log('📤 Sending response to client');
+res.json(data);
         
     } catch (error) {
         console.error('💥 Exception in API call:', error);
