@@ -6,7 +6,12 @@ let apiKey = localStorage.getItem('claude-api-key') || '';
 let isConnected = false;
 let uploadedFiles = [];
 let conversations = [];
-
+// Statistics tracking
+let sessionStats = {
+    tokensUsed: 0,
+    messagesSent: 0,
+    estimatedCost: 0
+};
 // Theme management
 let isDarkMode = localStorage.getItem('dark-mode') === 'true';
 
@@ -207,6 +212,10 @@ function showUserInterface(user) {
     
     // Hide welcome state, show chat interface
     hideWelcomeState();
+    
+    // Show statistics when user logs in
+    document.getElementById('tokenStats').style.display = 'block';
+    updateStatsDisplay();
 }
 
 function showLoginInterface() {
@@ -227,6 +236,9 @@ function showLoginInterface() {
     
     // Show welcome state
     showWelcomeState();
+    
+    // Hide statistics when logged out
+    document.getElementById('tokenStats').style.display = 'none';
 }
 
 function showWelcomeState() {
@@ -699,7 +711,8 @@ async function sendMessage() {
         if (response) {
             addMessageToChat(response, 'assistant', true);
             await saveMessages(message, response);
-            
+            // Update statistics
+updateStats(message, response);
             // Update conversation title if it's the first message
             await updateConversationTitle(message);
             
@@ -1306,5 +1319,42 @@ if (typeof window !== 'undefined') {
         }
     };
 }
+// Statistics functions
+function estimateTokens(text) {
+    // Rough estimation: ~4 characters per token
+    return Math.ceil(text.length / 4);
+}
 
+function updateStats(userMessage, assistantMessage) {
+    const userTokens = estimateTokens(userMessage);
+    const assistantTokens = estimateTokens(assistantMessage);
+    const totalTokens = userTokens + assistantTokens;
+    
+    sessionStats.tokensUsed += totalTokens;
+    sessionStats.messagesSent += 1;
+    
+    // Cost estimation (Claude pricing: ~$0.0015 per 1000 tokens)
+    sessionStats.estimatedCost = (sessionStats.tokensUsed / 1000) * 0.0015;
+    
+    updateStatsDisplay();
+    console.log('📊 Stats updated:', sessionStats);
+}
+
+function updateStatsDisplay() {
+    document.getElementById('tokensUsed').textContent = sessionStats.tokensUsed.toLocaleString();
+    document.getElementById('messagesSent').textContent = sessionStats.messagesSent;
+    document.getElementById('estimatedCost').textContent = '$' + sessionStats.estimatedCost.toFixed(4);
+}
+
+function resetStats() {
+    if (confirm('Vuoi resettare le statistiche della sessione?')) {
+        sessionStats = {
+            tokensUsed: 0,
+            messagesSent: 0,
+            estimatedCost: 0
+        };
+        updateStatsDisplay();
+        console.log('📊 Stats reset');
+    }
+}
 console.log('🚀 Claude AI Interface initialized successfully!');
