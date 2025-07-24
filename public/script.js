@@ -1871,13 +1871,15 @@ async function saveSettings() {
     if (currentUser && window.supabase) {
         try {
             const { error } = await window.supabase
-                .from('user_settings')
-                .upsert([{
-                    user_id: currentUser.id,
-                    api_spending_limit: spendingLimit,
-                    api_warning_threshold: warningThreshold,
-                    updated_at: new Date().toISOString()
-                }]);
+    .from('user_settings')
+    .upsert([{
+        user_id: currentUser.id,
+        api_spending_limit: spendingLimit,
+        api_warning_threshold: warningThreshold,
+        updated_at: new Date().toISOString()
+    }], {
+        onConflict: 'user_id'
+    });
 
             if (error) {
                 console.error('Error saving settings:', error);
