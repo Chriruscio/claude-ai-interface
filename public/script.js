@@ -1427,20 +1427,48 @@ function showSpendingWarning() {
 }
 
 async function callClaudeAPI(message) {
-    const model = document.getElementById('modelSelector').value;
+    const modelMap = {
+        'claude-sonnet-4-20250514': 'claude-3-sonnet-20240229',
+        'claude-opus-4': 'claude-3-opus-20240229'
+    };
+    
+    const selectedModel = document.getElementById('modelSelector').value;
+    const model = modelMap[selectedModel] || 'claude-3-sonnet-20240229';
     
     try {
-        const response = await fetch('/api/chat', {
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'x-api-key': apiKey,
+                'anthropic-version': '2023-06-01'
             },
             body: JSON.stringify({
-                messages: [{ role: 'user', content: message }],
                 model: model,
-                apiKey: apiKey
+                max_tokens: 4000,
+                messages: [{ role: 'user', content: message }]
             })
         });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error?.message || `HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        // Estrai il contenuto dalla risposta
+        if (data.content && Array.isArray(data.content) && data.content[0] && data.content[0].text) {
+            return data.content[0].text;
+        } else {
+            throw new Error('Formato risposta non valido');
+        }
+        
+    } catch (error) {
+        console.error('Claude API error:', error);
+        throw error;
+    }
+}
 
         if (!response.ok) {
             const errorData = await response.json();
@@ -1804,31 +1832,36 @@ async function testConnection() {
     try {
         console.log('🧪 Test connessione API...');
         
-        const response = await fetch('/api/test', {
+        // Test diretto con API Anthropic
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'x-api-key': testKey,
+                'anthropic-version': '2023-06-01'
             },
-            body: JSON.stringify({ apiKey: testKey })
+            body: JSON.stringify({
+                model: 'claude-3-sonnet-20240229',
+                max_tokens: 10,
+                messages: [{ role: 'user', content: 'Hi' }]
+            })
         });
 
-        const result = await response.json();
-        updateConnectionStatus(result.success);
-        
-        if (result.success) {
+        if (response.ok || response.status === 200) {
+            updateConnectionStatus(true);
             console.log('✅ Connessione API riuscita');
             if (currentUser) {
                 document.getElementById('sendButton').disabled = false;
             }
             alert('✅ Connessione riuscita!');
         } else {
-            console.log('❌ Connessione API fallita');
-            alert('❌ API key non valida: ' + (result.error || 'Errore sconosciuto'));
+            throw new Error(`HTTP ${response.status}`);
         }
+        
     } catch (error) {
         console.error('Test connection error:', error);
         updateConnectionStatus(false);
-        alert('❌ Errore di rete durante il test');
+        alert('❌ API key non valida o errore di rete');
     }
 }
 
