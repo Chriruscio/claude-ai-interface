@@ -330,14 +330,13 @@ async function saveProject() {
         console.log('📁 Creazione progetto:', name);
         
         const { data, error } = await window.supabase
-            .from('projects')
-            .insert([{
-                name: name,
-                description: description || null,
-                user_id: currentUser.id,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-            }])
+    .from('projects')
+    .insert([{
+        name: name,
+        user_id: currentUser.id,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+    }])
             .select()
             .single();
 
@@ -860,14 +859,14 @@ async function newChat() {
         console.log('💬 Nuova conversazione...');
         
         const { data, error } = await window.supabase
-            .from('conversations')
-            .insert([{
-                title: 'Nuova conversazione',
-                user_id: currentUser.id,
-                project_id: currentProject,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-            }])
+    .from('conversations')
+    .insert([{
+        title: 'Nuova conversazione',
+        user_id: currentUser.id,
+        project_id: currentProject || null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+    }])
             .select()
             .single();
 
