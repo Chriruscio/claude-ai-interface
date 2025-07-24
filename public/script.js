@@ -1807,36 +1807,23 @@ async function testConnection() {
     try {
         console.log('🧪 Test connessione API...');
         
-        // Test diretto con API Anthropic
-        const response = await fetch('https://api.anthropic.com/v1/messages', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-key': testKey,
-                'anthropic-version': '2023-06-01'
-            },
-            body: JSON.stringify({
-                model: 'claude-3-sonnet-20240229',
-                max_tokens: 10,
-                messages: [{ role: 'user', content: 'Hi' }]
-            })
-        });
-
-        if (response.ok || response.status === 200) {
+        // Per il CORS, non possiamo testare direttamente dal browser
+        if (testKey.startsWith('sk-ant-')) {
             updateConnectionStatus(true);
-            console.log('✅ Connessione API riuscita');
+            console.log('✅ API key format valido');
             if (currentUser) {
                 document.getElementById('sendButton').disabled = false;
             }
-            alert('✅ Connessione riuscita!');
+            alert('✅ Formato API key valido! (Test completo sarà fatto al primo messaggio)');
         } else {
-            throw new Error(`HTTP ${response.status}`);
+            updateConnectionStatus(false);
+            alert('❌ Formato API key non valido. Deve iniziare con "sk-ant-"');
         }
         
     } catch (error) {
         console.error('Test connection error:', error);
         updateConnectionStatus(false);
-        alert('❌ API key non valida o errore di rete');
+        alert('❌ Errore nel test API key');
     }
 }
 
