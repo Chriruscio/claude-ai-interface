@@ -1470,12 +1470,7 @@ async function callClaudeAPI(message) {
     }
 }
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || `HTTP ${response.status}`);
-        }
-
-        const data = await response.json();
+        
         
         // Fix per diversi formati di risposta
         if (data.content && Array.isArray(data.content) && data.content[0] && data.content[0].text) {
