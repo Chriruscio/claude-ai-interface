@@ -29,19 +29,18 @@ app.post('/api/test', async (req, res) => {
     
     try {
         const fetch = (await import('node-fetch')).default;
-        const response = await fetch('https://api.anthropic.com/v1/complete', {
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'x-api-key': apiKey,
-                'anthropic-version': '2023-06-01'
+                'anthropic-version': '2024-01-01'
             },
             body: JSON.stringify({
-    model: claudeModel,
-    max_tokens: 4000,
-    prompt: `Human: ${messages[0].content}\n\nAssistant:`,
-    stop_sequences: ["\n\nHuman:"]
-})
+                model: 'claude-3-sonnet-20240229',
+                max_tokens: 10,
+                messages: [{ role: 'user', content: 'Hi' }]
+            })
         });
 
         if (response.ok) {
@@ -55,6 +54,7 @@ app.post('/api/test', async (req, res) => {
     }
 });
 
+// API chat endpoint
 app.post('/api/chat', async (req, res) => {
     console.log('🎯 CHAT API HIT!', {
         method: req.method,
@@ -92,7 +92,7 @@ app.post('/api/chat', async (req, res) => {
             headers: {
                 'Content-Type': 'application/json',
                 'x-api-key': apiKey,
-                'anthropic-version': '2023-06-01'
+                'anthropic-version': '2024-01-01'
             },
             body: JSON.stringify({
                 model: claudeModel,
