@@ -440,8 +440,13 @@ async function callClaudeAPI(message) {
 
         const data = await response.json();
         
-        if (data.content && data.content[0] && data.content[0].text) {
-            return data.content[0].text;
+        // Fix per diversi formati di risposta
+if (data.content && Array.isArray(data.content) && data.content[0] && data.content[0].text) {
+    return data.content[0].text;
+} else if (data.content && typeof data.content === 'string') {
+    return data.content;
+} else if (data.content) {
+    return String(data.content);
         } else {
             throw new Error('Formato risposta non valido');
         }
