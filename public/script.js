@@ -1191,21 +1191,43 @@ function renderArtifactInChat(artifact) {
 }
 
 function renderArtifactPreview(artifact) {
-    switch (artifact.type) {
-        case 'html':
-            return `<iframe class="artifact-iframe" srcdoc="${escapeHtml(artifact.content)}" sandbox="allow-scripts"></iframe>`;
-        case 'javascript':
-        case 'python':
-        case 'json':
-        case 'css':
-            return `<pre class="artifact-code"><code class="language-${artifact.type}">${escapeHtml(artifact.content)}</code></pre>`;
-        case 'react':
-            return `<div class="artifact-react-info">React Component - Click "Visualizza" to render</div>`;
-        default:
-            return `<pre class="artifact-code"><code>${escapeHtml(artifact.content)}</code></pre>`;
-    }
+    return `
+        <div class="artifact-code-container">
+            <div class="artifact-code-header">
+                <span class="artifact-code-language">${artifact.type.toUpperCase()}</span>
+                <button class="artifact-copy-btn" onclick="copyArtifactCode(${artifact.id})" title="Copia codice">
+                    <i class="fas fa-copy"></i>
+                    <span>Copia</span>
+                </button>
+            </div>
+            <pre class="artifact-code"><code class="language-${artifact.type}" id="artifact-code-${artifact.id}">${escapeHtml(artifact.content)}</code></pre>
+        </div>
+    `;
 }
-
+// Funzione per copiare il codice dell'artifact
+function copyArtifactCode(artifactId) {
+    const artifact = artifacts.find(a => a.id === artifactId);
+    if (!artifact) return;
+    
+    navigator.clipboard.writeText(artifact.content).then(() => {
+        // Feedback visivo
+        const btn = document.querySelector(`button[onclick="copyArtifactCode(${artifactId})"]`);
+        if (btn) {
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check"></i><span>Copiato!</span>';
+            btn.style.background = 'var(--accent-success)';
+            btn.style.color = 'white';
+            
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.style.background = '';
+                btn.style.color = '';
+            }, 2000);
+        }
+    }).catch(err => {
+        console.error('Errore nel copiare:', err);
+    });
+}
 function escapeHtml(unsafe) {
     return unsafe
         .replace(/&/g, "&amp;")
