@@ -1658,43 +1658,12 @@ function addMessageToChat(content, role, animate = true) {
         <div class="message-avatar">
             ${avatarContent}
         </div>
-        <div class="message-content" id="message-content-${Date.now()}">
+        <div class="message-content">
+            ${formatMessageContent(content)}
         </div>
     `;
     
     messagesContainer.appendChild(messageDiv);
-    
-    // 🔥 AUTO-SCROLL CONTINUO DURANTE LA SCRITTURA
-    const contentDiv = messageDiv.querySelector('.message-content');
-    
-    if (role === 'assistant') {
-        // Simula scrittura lettera per lettera per Claude
-        let index = 0;
-        const formattedContent = formatMessageContent(content);
-        
-        // Scroll continuo durante la scrittura
-        const scrollInterval = setInterval(() => {
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        }, 50);
-        
-        const typeInterval = setInterval(() => {
-            if (index < formattedContent.length) {
-                contentDiv.innerHTML = formattedContent.substring(0, index + 1);
-                index++;
-                messagesContainer.scrollTop = messagesContainer.scrollHeight;
-            } else {
-                clearInterval(typeInterval);
-                clearInterval(scrollInterval);
-                // Scroll finale
-                messagesContainer.scrollTop = messagesContainer.scrollHeight;
-            }
-        }, 20); // Velocità di scrittura
-        
-    } else {
-        // Per messaggi utente, mostra immediatamente
-        contentDiv.innerHTML = formatMessageContent(content);
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-    }
 }
 
 function formatMessageContent(content) {
