@@ -38,7 +38,7 @@ async function initializeApp() {
     // Setup event listeners
     setupEventListeners();
     // Enable auto-scroll sempre attivo
-forceAutoScroll();
+initAutoScrollObserver();
     // Test API key se presente
     if (apiKey) {
         document.getElementById('apiKeyInput').value = apiKey;
@@ -979,11 +979,58 @@ async function loadConversation(conversationId) {
         // Load artifacts for this conversation
         await loadConversationArtifacts(conversationId);
         
+        // ✅ AUTO-SCROLL FINALE DOPO CARICAMENTO
+        const messagesContainer = document.getElementById('messagesContainer');
+        if (messagesContainer) {
+            setTimeout(() => {
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                console.log('📜 Auto-scroll applicato dopo caricamento conversazione');
+            }, 200);
+        }
+        
         console.log('✅ Messaggi caricati:', messages.length);
         
     } catch (error) {
         console.error('Exception loading conversation:', error);
     }
+}
+
+// Funzione di utilità per l'auto-scroll
+function forceScrollToBottom() {
+    const messagesContainer = document.getElementById('messagesContainer');
+    if (messagesContainer) {
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        console.log('📜 Scroll forzato in fondo');
+    }
+}
+
+// Observer per monitorare i cambiamenti nel DOM
+function initAutoScrollObserver() {
+    const messagesContainer = document.getElementById('messagesContainer');
+    if (!messagesContainer) return;
+    
+    const observer = new MutationObserver((mutations) => {
+        let shouldScroll = false;
+        
+        mutations.forEach((mutation) => {
+            if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                shouldScroll = true;
+            }
+        });
+        
+        if (shouldScroll) {
+            setTimeout(() => {
+                forceScrollToBottom();
+            }, 50);
+        }
+    });
+    
+    observer.observe(messagesContainer, {
+        childList: true,
+        subtree: true
+    });
+    
+    console.log('👁️ Auto-scroll observer attivato');
 }
 
 async function renameConversation(conversationId) {
@@ -1216,17 +1263,15 @@ function renderArtifactInChat(artifact) {
     <div class="artifact-preview" id="artifact-preview-${artifact.id}">
         ${renderArtifactPreview(artifact)}
     </div>
-
     `;
     
     messagesContainer.appendChild(artifactDiv);
-    // Scroll immediato
-messagesContainer.scrollTop = messagesContainer.scrollHeight;
-
-// Scroll ritardato per assicurarsi che l'artifact sia renderizzato
-setTimeout(() => {
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
-}, 100);
+    
+    // ✅ AUTO-SCROLL FORZATO DOPO ARTIFACT
+    setTimeout(() => {
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        console.log('📜 Auto-scroll applicato dopo artifact');
+    }, 100);
 }
 
 function renderArtifactPreview(artifact) {
@@ -1664,6 +1709,12 @@ function addMessageToChat(content, role, animate = true) {
     `;
     
     messagesContainer.appendChild(messageDiv);
+    
+    // ✅ AUTO-SCROLL FORZATO DOPO OGNI MESSAGGIO
+    setTimeout(() => {
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        console.log('📜 Auto-scroll applicato dopo messaggio');
+    }, 50);
 }
 
 function formatMessageContent(content) {
@@ -1876,15 +1927,13 @@ function showTypingIndicator() {
     if (typingIndicator) {
         typingIndicator.style.display = 'flex';
         
-        // Scroll immediato
+        // ✅ AUTO-SCROLL DURANTE TYPING
         const messagesContainer = document.getElementById('messagesContainer');
         if (messagesContainer) {
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-            
-            // Auto-scroll continuo durante la digitazione
-            window.typingScrollInterval = setInterval(() => {
+            setTimeout(() => {
                 messagesContainer.scrollTop = messagesContainer.scrollHeight;
-            }, 100);
+                console.log('📜 Auto-scroll applicato durante typing');
+            }, 50);
         }
     }
 }
@@ -1894,10 +1943,13 @@ function hideTypingIndicator() {
     if (typingIndicator) {
         typingIndicator.style.display = 'none';
         
-        // Ferma l'auto-scroll continuo
-        if (window.typingScrollInterval) {
-            clearInterval(window.typingScrollInterval);
-            window.typingScrollInterval = null;
+        // ✅ AUTO-SCROLL DOPO TYPING
+        const messagesContainer = document.getElementById('messagesContainer');
+        if (messagesContainer) {
+            setTimeout(() => {
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                console.log('📜 Auto-scroll applicato dopo typing');
+            }, 50);
         }
     }
 }
