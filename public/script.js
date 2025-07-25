@@ -680,20 +680,34 @@ async function uploadFileToProject(file) {
         }
 
         // Save metadata to database
-        const { error: dbError } = await window.supabase
-            .from('project_documents')
-            .insert([{
-                project_id: currentProject,
-                user_id: currentUser.id,
-                name: file.name,
-                content: content,
-                file_path: fileName,
-                size: file.size,
-                mime_type: file.type,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-            }]);
+// Determina se è file di testo
+const isTextFile = file.type.startsWith('text/') || 
+                  file.name.endsWith('.md') || 
+                  file.name.endsWith('.txt') || 
+                  file.name.endsWith('.csv') || 
+                  file.name.endsWith('.json');
 
+const dbRecord = {
+    project_id: currentProject,
+    user_id: currentUser.id,
+    name: file.name,
+    file_path: fileName,
+    size: file.size,
+    mime_type: file.type,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+};
+
+// Solo per file di testo, salva il contenuto
+if (isTextFile) {
+    dbRecord.content = content;
+} else {
+    dbRecord.content = `[Binary file: ${file.type}]`;
+}
+
+const { error: dbError } = await window.supabase
+    .from('project_documents')
+    .insert([dbRecord]);
         if (dbError) {
             console.error('Database insert error:', dbError);
             throw dbError;
@@ -1345,22 +1359,44 @@ async function sendMessage() {
         // Show typing
         showTypingIndicator();
 
-        // Prepare context with project documents
-        let contextMessage = message;
-        if (currentProject && projectDocuments.length > 0) {
-            const docsContext = projectDocuments.map(doc => 
-                `[Documento: ${doc.name}]\n${doc.content || '[Contenuto non disponibile]'}`
-            ).join('\n\n');
-            contextMessage = `${docsContext}\n\nUser message: ${message}`;
-        }
+        // Prepare context with project documents (solo file di testo)
+let contextMessage = message;
+if (currentProject && projectDocuments.length > 0) {
+    const textDocs = projectDocuments.filter(doc => {
+        return doc.mime_type && (
+            doc.mime_type.startsWith('text/') || 
+            doc.name.endsWith('.txt') || 
+            doc.name.endsWith('.md') || 
+            doc.name.endsWith('.csv') || 
+            doc.name.endsWith('.json')
+        ) && doc.content && !doc.content.startsWith('[Binary file:');
+    });
 
-        // Add uploaded files to context
-        if (uploadedFiles.length > 0) {
-            const filesContext = uploadedFiles.map(file => 
-                `[File: ${file.name}]\n${file.content || '[File content not available]'}`
-            ).join('\n\n');
-            contextMessage = `${filesContext}\n\n${contextMessage}`;
-        }
+    if (textDocs.length > 0) {
+        const docsContext = textDocs.map(doc => 
+            `[Documento: ${doc.name}]\n${doc.content || '[Contenuto non disponibile]'}`
+        ).join('\n\n');
+        contextMessage = `${docsContext}\n\nUser message: ${message}`;
+    }
+}
+
+        // Add uploaded files to context (solo file di testo)
+if (uploadedFiles.length > 0) {
+    const textFiles = uploadedFiles.filter(file => {
+        return file.name.endsWith('.txt') || 
+               file.name.endsWith('.md') || 
+               file.name.endsWith('.csv') || 
+               file.name.endsWith('.json') ||
+               (file.content && !file.content.startsWith('data:'));
+    });
+
+    if (textFiles.length > 0) {
+        const filesContext = textFiles.map(file => 
+            `[File: ${file.name}]\n${file.content || '[File content not available]'}`
+        ).join('\n\n');
+        contextMessage = `${filesContext}\n\n${contextMessage}`;
+    }
+}
 
         // Call Claude API
         const response = await callClaudeAPI(contextMessage);
@@ -1670,7 +1706,7 @@ function readFileContent(file) {
         if (file.type.startsWith('text/') || file.name.endsWith('.md')) {
             reader.readAsText(file);
         } else {
-            reader.readAsText(file); // Try as text for now
+            reader.readAsDataURL(file); // Leggi come base64 per file binari
         }
     });
 }
