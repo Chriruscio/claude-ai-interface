@@ -37,7 +37,8 @@ async function initializeApp() {
     
     // Setup event listeners
     setupEventListeners();
-    
+    // Enable auto-scroll sempre attivo
+enableAutoScroll();
     // Test API key se presente
     if (apiKey) {
         document.getElementById('apiKeyInput').value = apiKey;
@@ -131,7 +132,30 @@ function setupEventListeners() {
         }
     });
 }
-
+// Auto-scroll continuo - sempre in fondo
+function enableAutoScroll() {
+    const messagesContainer = document.getElementById('messagesContainer');
+    if (!messagesContainer) return;
+    
+    // Observer che guarda tutti i cambiamenti nel container messaggi
+    const observer = new MutationObserver(() => {
+        // Scorre sempre in fondo ad ogni cambiamento
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    });
+    
+    // Osserva tutto: nuovi messaggi, modifiche, artifacts, etc.
+    observer.observe(messagesContainer, {
+        childList: true,       // Nuovi elementi
+        subtree: true,         // Anche i figli
+        characterData: true,   // Cambiamenti di testo
+        attributes: true       // Cambiamenti attributi
+    });
+    
+    // Scroll continuo ogni 100ms come backup
+    setInterval(() => {
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }, 100);
+}
 // Theme management
 function applyTheme() {
     if (isDarkMode) {
