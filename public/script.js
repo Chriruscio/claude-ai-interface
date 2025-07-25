@@ -1187,7 +1187,13 @@ function renderArtifactInChat(artifact) {
     `;
     
     messagesContainer.appendChild(artifactDiv);
+    // Scroll immediato
+messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+// Scroll ritardato per assicurarsi che l'artifact sia renderizzato
+setTimeout(() => {
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}, 100);
 }
 
 function renderArtifactPreview(artifact) {
