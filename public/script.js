@@ -1843,9 +1843,16 @@ function showTypingIndicator() {
     const typingIndicator = document.getElementById('typingIndicator');
     if (typingIndicator) {
         typingIndicator.style.display = 'flex';
+        
+        // Scroll immediato
         const messagesContainer = document.getElementById('messagesContainer');
         if (messagesContainer) {
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            
+            // Auto-scroll continuo durante la digitazione
+            window.typingScrollInterval = setInterval(() => {
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }, 100);
         }
     }
 }
@@ -1854,6 +1861,12 @@ function hideTypingIndicator() {
     const typingIndicator = document.getElementById('typingIndicator');
     if (typingIndicator) {
         typingIndicator.style.display = 'none';
+        
+        // Ferma l'auto-scroll continuo
+        if (window.typingScrollInterval) {
+            clearInterval(window.typingScrollInterval);
+            window.typingScrollInterval = null;
+        }
     }
 }
 
