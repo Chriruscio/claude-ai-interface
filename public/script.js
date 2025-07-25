@@ -1137,7 +1137,19 @@ async function saveArtifact(artifactData) {
         return null;
     }
 }
-
+// Funzione per ottenere l'icona corretta per tipo di artifact
+function getArtifactIcon(type) {
+    const icons = {
+        'html': 'fa-code',
+        'javascript': 'fa-js-square',
+        'python': 'fa-python',
+        'json': 'fa-code',
+        'css': 'fa-css3-alt',
+        'react': 'fa-react',
+        'code': 'fa-code'
+    };
+    return icons[type] || 'fa-code';
+}
 function renderArtifactInChat(artifact) {
     const messagesContainer = document.getElementById('messagesContainer');
     if (!messagesContainer) return;
@@ -1145,29 +1157,33 @@ function renderArtifactInChat(artifact) {
     const artifactDiv = document.createElement('div');
     artifactDiv.className = 'artifact-container';
     artifactDiv.innerHTML = `
-        <div class="artifact-header">
-            <div class="artifact-info">
-                <i class="fas fa-code artifact-icon"></i>
-                <div class="artifact-details">
-                    <div class="artifact-title">${artifact.title}</div>
-                    <div class="artifact-type">${artifact.type.toUpperCase()}</div>
-                </div>
+    <div class="artifact-header">
+        <div class="artifact-info">
+            <div class="artifact-icon">
+                <i class="fas ${getArtifactIcon(artifact.type)}"></i>
             </div>
-            <div class="artifact-actions">
-                <button class="artifact-action" onclick="viewArtifact(${artifact.id})" title="Visualizza">
-                    <i class="fas fa-eye"></i>
-                </button>
-                <button class="artifact-action" onclick="editArtifact(${artifact.id})" title="Modifica">
-                    <i class="fas fa-edit"></i>
-                </button>
-                <button class="artifact-action" onclick="downloadArtifact(${artifact.id})" title="Scarica">
-                    <i class="fas fa-download"></i>
-                </button>
+            <div class="artifact-details">
+                <div class="artifact-title">${artifact.title}</div>
+                <div class="artifact-type">${artifact.type}</div>
             </div>
         </div>
-        <div class="artifact-preview" id="artifact-preview-${artifact.id}">
-            ${renderArtifactPreview(artifact)}
+        <div class="artifact-actions">
+            <button class="artifact-action primary" onclick="viewArtifact(${artifact.id})" title="Visualizza artifact">
+                <i class="fas fa-eye"></i>
+                <span>Visualizza</span>
+            </button>
+            <button class="artifact-action" onclick="editArtifact(${artifact.id})" title="Modifica artifact">
+                <i class="fas fa-edit"></i>
+            </button>
+            <button class="artifact-action" onclick="downloadArtifact(${artifact.id})" title="Scarica artifact">
+                <i class="fas fa-download"></i>
+            </button>
         </div>
+    </div>
+    <div class="artifact-preview" id="artifact-preview-${artifact.id}">
+        ${renderArtifactPreview(artifact)}
+    </div>
+
     `;
     
     messagesContainer.appendChild(artifactDiv);
