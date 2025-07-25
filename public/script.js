@@ -38,7 +38,7 @@ async function initializeApp() {
     // Setup event listeners
     setupEventListeners();
     // Enable auto-scroll sempre attivo
-enableSmartAutoScroll();
+forceAutoScroll();
     // Test API key se presente
     if (apiKey) {
         document.getElementById('apiKeyInput').value = apiKey;
@@ -133,27 +133,36 @@ function setupEventListeners() {
     });
 }
 // Auto-scroll INTELLIGENTE - solo quando serve
-function enableSmartAutoScroll() {
+// SCROLL BRUTALE - FUNZIONA SEMPRE
+function forceAutoScroll() {
     const messagesContainer = document.getElementById('messagesContainer');
     if (!messagesContainer) return;
     
-    let lastHeight = messagesContainer.scrollHeight;
+    console.log('🔥 SCROLL BRUTALE ATTIVATO');
     
-    // Observer che scorre SOLO quando cambia l'altezza del contenuto
+    // Funzione che forza scroll in fondo
+    function scrollDown() {
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        console.log('📜 SCROLL FORZATO');
+    }
+    
+    // Observer per OGNI cambiamento
     const observer = new MutationObserver(() => {
-        const newHeight = messagesContainer.scrollHeight;
-        
-        // Solo se è arrivato NUOVO contenuto
-        if (newHeight > lastHeight) {
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-            lastHeight = newHeight;
-            console.log('📜 Nuovo contenuto - scroll automatico');
-        }
+        scrollDown();
     });
     
     observer.observe(messagesContainer, {
         childList: true,
-        subtree: true
+        subtree: true,
+        characterData: true
+    });
+    
+    // Backup timer - scroll ogni secondo
+    setInterval(scrollDown, 1000);
+    
+    // Scroll anche su eventi
+    ['click', 'keyup', 'focus'].forEach(event => {
+        document.addEventListener(event, scrollDown);
     });
 }
 // Theme management
