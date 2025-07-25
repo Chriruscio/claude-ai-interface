@@ -38,7 +38,7 @@ async function initializeApp() {
     // Setup event listeners
     setupEventListeners();
     // Enable auto-scroll sempre attivo
-enableAutoScroll();
+enableSmartAutoScroll();
     // Test API key se presente
     if (apiKey) {
         document.getElementById('apiKeyInput').value = apiKey;
@@ -132,29 +132,29 @@ function setupEventListeners() {
         }
     });
 }
-// Auto-scroll continuo - sempre in fondo
-function enableAutoScroll() {
+// Auto-scroll INTELLIGENTE - solo quando serve
+function enableSmartAutoScroll() {
     const messagesContainer = document.getElementById('messagesContainer');
     if (!messagesContainer) return;
     
-    // Observer che guarda tutti i cambiamenti nel container messaggi
+    let lastHeight = messagesContainer.scrollHeight;
+    
+    // Observer che scorre SOLO quando cambia l'altezza del contenuto
     const observer = new MutationObserver(() => {
-        // Scorre sempre in fondo ad ogni cambiamento
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        const newHeight = messagesContainer.scrollHeight;
+        
+        // Solo se è arrivato NUOVO contenuto
+        if (newHeight > lastHeight) {
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            lastHeight = newHeight;
+            console.log('📜 Nuovo contenuto - scroll automatico');
+        }
     });
     
-    // Osserva tutto: nuovi messaggi, modifiche, artifacts, etc.
     observer.observe(messagesContainer, {
-        childList: true,       // Nuovi elementi
-        subtree: true,         // Anche i figli
-        characterData: true,   // Cambiamenti di testo
-        attributes: true       // Cambiamenti attributi
+        childList: true,
+        subtree: true
     });
-    
-    // Scroll continuo ogni 100ms come backup
-    setInterval(() => {
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-    }, 100);
 }
 // Theme management
 function applyTheme() {
