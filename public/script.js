@@ -390,7 +390,6 @@ async function saveProject() {
     }
 }
 
-// NEW: Delete project function
 async function deleteProject(projectId, projectName) {
     if (!confirm(`Sei sicuro di voler eliminare il progetto "${projectName}"? Questa azione eliminerà anche tutte le conversazioni e documenti associati.`)) {
         return;
@@ -401,6 +400,41 @@ async function deleteProject(projectId, projectName) {
     try {
         console.log('🗑️ Eliminazione progetto:', projectId);
         
+        // 1. Prima elimina tutti i messaggi delle conversazioni del progetto
+        const { data: projectConversations } = await window.supabase
+            .from('conversations')
+            .select('id')
+            .eq('project_id', projectId);
+            
+        if (projectConversations && projectConversations.length > 0) {
+            const conversationIds = projectConversations.map(c => c.id);
+            
+            // Elimina i messaggi
+            await window.supabase
+                .from('messages')
+                .delete()
+                .in('conversation_id', conversationIds);
+                
+            // Elimina gli artifacts
+            await window.supabase
+                .from('artifacts')
+                .delete()
+                .in('conversation_id', conversationIds);
+        }
+        
+        // 2. Elimina le conversazioni del progetto
+        await window.supabase
+            .from('conversations')
+            .delete()
+            .eq('project_id', projectId);
+            
+        // 3. Elimina i documenti del progetto
+        await window.supabase
+            .from('project_documents')
+            .delete()
+            .eq('project_id', projectId);
+        
+        // 4. Infine elimina il progetto
         const { error } = await window.supabase
             .from('projects')
             .delete()
@@ -419,7 +453,7 @@ async function deleteProject(projectId, projectName) {
         }
 
         await loadUserData();
-        console.log('✅ Progetto eliminato');
+        console.log('✅ Progetto eliminato con tutte le dipendenze');
         
     } catch (error) {
         console.error('Exception deleting project:', error);
