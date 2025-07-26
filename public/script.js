@@ -2323,5 +2323,14 @@ if (typeof window !== 'undefined') {
         }
     };
 }
-
+// FORZA SCROLL BRUTALE - DEVE FUNZIONARE
+setInterval(() => {
+    const messagesContainer = document.getElementById('messagesContainer');
+    if (messagesContainer) {
+        const isAtBottom = messagesContainer.scrollHeight - messagesContainer.scrollTop - messagesContainer.clientHeight < 100;
+        if (isAtBottom || messagesContainer.scrollTop === 0) {
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+    }
+}, 100);
 console.log('🚀 Claude AI Interface initialized successfully!');
