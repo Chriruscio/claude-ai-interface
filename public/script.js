@@ -1737,9 +1737,7 @@ function addMessageToChat(content, role, animate = true) {
     
     // Forza lo scroll in fondo dopo aver aggiunto il messaggio
     requestAnimationFrame(() => {
-        if (window.scrollToBottom) {
-            window.scrollToBottom(true);
-        }
+        messageDiv.scrollIntoView({ behavior: 'smooth', block: 'end' });
     });
 }
 
@@ -2326,11 +2324,11 @@ if (typeof window !== 'undefined') {
 // FORZA SCROLL BRUTALE - DEVE FUNZIONARE
 setInterval(() => {
     const messagesContainer = document.getElementById('messagesContainer');
-    if (messagesContainer) {
-        const isAtBottom = messagesContainer.scrollHeight - messagesContainer.scrollTop - messagesContainer.clientHeight < 100;
-        if (isAtBottom || messagesContainer.scrollTop === 0) {
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    if (messagesContainer && messagesContainer.lastElementChild) {
+        const isAtBottom = messagesContainer.scrollHeight - messagesContainer.scrollTop - messagesContainer.clientHeight < 200;
+        if (isAtBottom) {
+            messagesContainer.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
         }
     }
-}, 100);
+}, 200);
 console.log('🚀 Claude AI Interface initialized successfully!');
