@@ -134,6 +134,7 @@ function setupEventListeners() {
 }
 // Auto-scroll INTELLIGENTE - solo quando serve
 // SCROLL BRUTALE - FUNZIONA SEMPRE
+/*
 function forceAutoScroll() {
     const messagesContainer = document.getElementById('messagesContainer');
     if (!messagesContainer) return;
@@ -164,7 +165,7 @@ function forceAutoScroll() {
     ['click', 'keyup', 'focus'].forEach(event => {
         document.addEventListener(event, scrollDown);
     });
-}
+}*/
 // Theme management
 function applyTheme() {
     if (isDarkMode) {
@@ -979,15 +980,15 @@ async function loadConversation(conversationId) {
         // Load artifacts for this conversation
         await loadConversationArtifacts(conversationId);
         
-        // ✅ AUTO-SCROLL FINALE DOPO CARICAMENTO
-        const messagesContainer = document.getElementById('messagesContainer');
-        if (messagesContainer) {
-            setTimeout(() => {
+        // Forza scroll in fondo dopo il caricamento completo
+        requestAnimationFrame(() => {
+            const messagesContainer = document.getElementById('messagesContainer');
+            if (messagesContainer) {
                 messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                console.log('📜 Auto-scroll applicato dopo caricamento conversazione');
-            }, 200);
-        }
-        
+                console.log('✅ Scroll applicato dopo caricamento conversazione');
+            }
+        });
+
         console.log('✅ Messaggi caricati:', messages.length);
         
     } catch (error) {
@@ -996,41 +997,65 @@ async function loadConversation(conversationId) {
 }
 
 // Funzione di utilità per l'auto-scroll
+/*
 function forceScrollToBottom() {
     const messagesContainer = document.getElementById('messagesContainer');
     if (messagesContainer) {
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
         console.log('📜 Scroll forzato in fondo');
     }
-}
+}*/
 
 // Observer per monitorare i cambiamenti nel DOM
 function initAutoScrollObserver() {
     const messagesContainer = document.getElementById('messagesContainer');
     if (!messagesContainer) return;
     
-    const observer = new MutationObserver((mutations) => {
-        let shouldScroll = false;
-        
-        mutations.forEach((mutation) => {
-            if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
-                shouldScroll = true;
-            }
+    // Funzione per verificare se siamo vicini al fondo
+    function isNearBottom() {
+        const threshold = 150; // pixel di tolleranza
+        return messagesContainer.scrollHeight - messagesContainer.scrollTop - messagesContainer.clientHeight < threshold;
+    }
+    
+    // Funzione per scrollare in fondo
+    function scrollToBottom(smooth = true) {
+        messagesContainer.scrollTo({
+            top: messagesContainer.scrollHeight,
+            behavior: smooth ? 'smooth' : 'auto'
         });
-        
-        if (shouldScroll) {
-            setTimeout(() => {
-                forceScrollToBottom();
-            }, 50);
+    }
+    
+    // Observer per i cambiamenti nel DOM
+    const observer = new MutationObserver((mutations) => {
+        // Se eravamo già vicini al fondo, continua a scrollare
+        if (isNearBottom()) {
+            requestAnimationFrame(() => {
+                scrollToBottom(true);
+            });
         }
     });
     
+    // Osserva tutti i cambiamenti nel container dei messaggi
     observer.observe(messagesContainer, {
         childList: true,
-        subtree: true
+        subtree: true,
+        attributes: true,
+        characterData: true
     });
     
-    console.log('👁️ Auto-scroll observer attivato');
+    // Scroll anche quando cambia la dimensione del container
+    const resizeObserver = new ResizeObserver(() => {
+        if (isNearBottom()) {
+            scrollToBottom(false);
+        }
+    });
+    
+    resizeObserver.observe(messagesContainer);
+    
+    // Assegna la funzione globalmente per poterla chiamare quando serve
+    window.scrollToBottom = scrollToBottom;
+    
+    console.log('✅ Auto-scroll observer inizializzato correttamente');
 }
 
 async function renameConversation(conversationId) {
@@ -1710,11 +1735,12 @@ function addMessageToChat(content, role, animate = true) {
     
     messagesContainer.appendChild(messageDiv);
     
-    // ✅ AUTO-SCROLL FORZATO DOPO OGNI MESSAGGIO
-    setTimeout(() => {
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        console.log('📜 Auto-scroll applicato dopo messaggio');
-    }, 50);
+    // Forza lo scroll in fondo dopo aver aggiunto il messaggio
+    requestAnimationFrame(() => {
+        if (window.scrollToBottom) {
+            window.scrollToBottom(true);
+        }
+    });
 }
 
 function formatMessageContent(content) {
