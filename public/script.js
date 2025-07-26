@@ -1953,13 +1953,10 @@ function showTypingIndicator() {
     if (typingIndicator) {
         typingIndicator.style.display = 'flex';
         
-        // ✅ AUTO-SCROLL DURANTE TYPING
+        // Forza scroll immediato
         const messagesContainer = document.getElementById('messagesContainer');
         if (messagesContainer) {
-            setTimeout(() => {
-                messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                console.log('📜 Auto-scroll applicato durante typing');
-            }, 50);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight + 1000;
         }
     }
 }
@@ -1969,13 +1966,10 @@ function hideTypingIndicator() {
     if (typingIndicator) {
         typingIndicator.style.display = 'none';
         
-        // ✅ AUTO-SCROLL DOPO TYPING
+        // Forza scroll immediato
         const messagesContainer = document.getElementById('messagesContainer');
         if (messagesContainer) {
-            setTimeout(() => {
-                messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                console.log('📜 Auto-scroll applicato dopo typing');
-            }, 50);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight + 1000;
         }
     }
 }
