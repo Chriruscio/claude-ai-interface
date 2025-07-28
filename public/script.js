@@ -2365,43 +2365,53 @@ if (typeof window !== 'undefined') {
         }
     };
 }
-// AUTO-SCROLL SOLO PER NUOVI MESSAGGI
-let autoScrollEnabled = true;
-let lastMessageCount = 0;
-
-// Disattiva auto-scroll quando l'utente scrolla manualmente
-const messagesContainer = document.getElementById('messagesContainer');
-if (messagesContainer) {
-    messagesContainer.addEventListener('scroll', () => {
-        const distanceFromBottom = messagesContainer.scrollHeight - messagesContainer.scrollTop - messagesContainer.clientHeight;
-        
-        // Se l'utente scrolla verso l'alto (si allontana dal fondo)
-        if (distanceFromBottom > 100) {
-            autoScrollEnabled = false;
-            console.log('🔒 Auto-scroll disattivato');
+// AUTO-SCROLL INTELLIGENTE - SOLUZIONE DEFINITIVA
+(function() {
+    let isUserScrolling = false;
+    let scrollEndTimer;
+    
+    // Aspetta che il DOM sia pronto
+    function initSmartScroll() {
+        const container = document.getElementById('messagesContainer');
+        if (!container) {
+            setTimeout(initSmartScroll, 500);
+            return;
         }
         
-        // Se l'utente torna vicino al fondo
-        if (distanceFromBottom < 50) {
-            autoScrollEnabled = true;
-            console.log('🔓 Auto-scroll riattivato');
-        }
-    });
-}
-
-// Monitora solo i NUOVI messaggi
-setInterval(() => {
-    const container = document.getElementById('messagesContainer');
-    if (container && autoScrollEnabled) {
-        const currentMessageCount = container.children.length;
+        // Flag per tracciare lo scroll manuale
+        container.addEventListener('wheel', function() {
+            isUserScrolling = true;
+            clearTimeout(scrollEndTimer);
+            
+            // Reset dopo 1 secondo di inattività
+            scrollEndTimer = setTimeout(() => {
+                const atBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100;
+                if (atBottom) {
+                    isUserScrolling = false;
+                }
+            }, 1000);
+        });
         
-        // Scrolla solo se ci sono NUOVI messaggi
-        if (currentMessageCount > lastMessageCount) {
-            container.lastElementChild?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-            console.log('📩 Nuovo messaggio - Auto-scroll');
-        }
+        // Osserva i nuovi messaggi
+        const observer = new MutationObserver(function(mutations) {
+            // Solo se non stai scrollando manualmente
+            if (!isUserScrolling) {
+                setTimeout(() => {
+                    container.scrollTop = container.scrollHeight;
+                }, 100);
+            }
+        });
         
-        lastMessageCount = currentMessageCount;
+        observer.observe(container, {
+            childList: true,
+            subtree: true
+        });
+        
+        console.log('✅ Smart scroll inizializzato');
     }
-}, 100);
+    
+    // Avvia dopo 1 secondo
+    setTimeout(initSmartScroll, 1000);
+})();
+
 console.log('🚀 Claude AI Interface initialized successfully!');
