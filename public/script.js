@@ -1561,8 +1561,10 @@ if (currentProject && projectDocuments.length > 0) {
     }
 }
 
-        // Add uploaded files to context (solo file di testo)
+// Add uploaded files to context (solo file di testo)
 if (uploadedFiles.length > 0) {
+    console.log('📎 Files caricati:', uploadedFiles.length);
+    
     const textFiles = uploadedFiles.filter(file => {
         return file.name.endsWith('.txt') || 
                file.name.endsWith('.md') || 
@@ -1570,19 +1572,24 @@ if (uploadedFiles.length > 0) {
                file.name.endsWith('.json') ||
                (file.content && !file.content.startsWith('data:'));
     });
-
+    
+    console.log('📄 Text files trovati:', textFiles.length);
+    
     if (textFiles.length > 0) {
         const filesContext = textFiles.map(file => 
             `[File: ${file.name}]\n${file.content || '[File content not available]'}`
         ).join('\n\n');
         contextMessage = `${filesContext}\n\n${contextMessage}`;
+        console.log('✅ Context con files:', contextMessage.substring(0, 300));
     }
 }
 
-        // Call Claude API
-        const response = await callClaudeAPI(contextMessage);
-        
-        hideTypingIndicator();
+console.log('📤 Context finale inviato:', contextMessage.substring(0, 300));
+
+// Call Claude API
+const response = await callClaudeAPI(contextMessage);
+
+hideTypingIndicator();
         
         if (response) {
             addMessageToChat(response, 'assistant', true);
