@@ -2365,14 +2365,18 @@ if (typeof window !== 'undefined') {
         }
     };
 }
-// FORZA SCROLL BRUTALE - DEVE FUNZIONARE
+// AUTO-SCROLL INTELLIGENTE - Si attiva solo quando sei già vicino al fondo
 setInterval(() => {
     const messagesContainer = document.getElementById('messagesContainer');
     if (messagesContainer && messagesContainer.lastElementChild) {
-        const isAtBottom = messagesContainer.scrollHeight - messagesContainer.scrollTop - messagesContainer.clientHeight < 200;
-        if (isAtBottom) {
+        // Calcola quanto sei lontano dal fondo
+        const distanceFromBottom = messagesContainer.scrollHeight - messagesContainer.scrollTop - messagesContainer.clientHeight;
+        
+        // Auto-scroll SOLO se sei già molto vicino al fondo (entro 300 pixel)
+        if (distanceFromBottom < 300) {
             messagesContainer.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
         }
+        // Se sei più in alto di 300px, NON fa nulla - puoi leggere in pace
     }
-}, 200);
+}, 500);
 console.log('🚀 Claude AI Interface initialized successfully!');
