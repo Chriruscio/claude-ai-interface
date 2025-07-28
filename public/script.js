@@ -2365,18 +2365,43 @@ if (typeof window !== 'undefined') {
         }
     };
 }
-// AUTO-SCROLL INTELLIGENTE - Si attiva solo quando sei già vicino al fondo
-setInterval(() => {
-    const messagesContainer = document.getElementById('messagesContainer');
-    if (messagesContainer && messagesContainer.lastElementChild) {
-        // Calcola quanto sei lontano dal fondo
+// AUTO-SCROLL SOLO PER NUOVI MESSAGGI
+let autoScrollEnabled = true;
+let lastMessageCount = 0;
+
+// Disattiva auto-scroll quando l'utente scrolla manualmente
+const messagesContainer = document.getElementById('messagesContainer');
+if (messagesContainer) {
+    messagesContainer.addEventListener('scroll', () => {
         const distanceFromBottom = messagesContainer.scrollHeight - messagesContainer.scrollTop - messagesContainer.clientHeight;
         
-        // Auto-scroll SOLO se sei già molto vicino al fondo (entro 300 pixel)
-        if (distanceFromBottom < 300) {
-            messagesContainer.lastElementChild.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        // Se l'utente scrolla verso l'alto (si allontana dal fondo)
+        if (distanceFromBottom > 100) {
+            autoScrollEnabled = false;
+            console.log('🔒 Auto-scroll disattivato');
         }
-        // Se sei più in alto di 300px, NON fa nulla - puoi leggere in pace
+        
+        // Se l'utente torna vicino al fondo
+        if (distanceFromBottom < 50) {
+            autoScrollEnabled = true;
+            console.log('🔓 Auto-scroll riattivato');
+        }
+    });
+}
+
+// Monitora solo i NUOVI messaggi
+setInterval(() => {
+    const container = document.getElementById('messagesContainer');
+    if (container && autoScrollEnabled) {
+        const currentMessageCount = container.children.length;
+        
+        // Scrolla solo se ci sono NUOVI messaggi
+        if (currentMessageCount > lastMessageCount) {
+            container.lastElementChild?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+            console.log('📩 Nuovo messaggio - Auto-scroll');
+        }
+        
+        lastMessageCount = currentMessageCount;
     }
-}, 500);
+}, 100);
 console.log('🚀 Claude AI Interface initialized successfully!');
