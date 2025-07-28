@@ -1613,6 +1613,9 @@ if (uploadedFiles.length > 0) {
             await updateConversationTitle(message);
             
             console.log('✅ Messaggio inviato e salvato');
+            // Clear uploaded files after sending
+uploadedFiles = [];
+renderUploadedFiles();
         }
         
     } catch (error) {
@@ -1951,8 +1954,8 @@ function renderUploadedFiles() {
     }
 }
 
-function removeFile(fileId) {
-    uploadedFiles = uploadedFiles.filter(file => file.id !== fileId);
+window.removeFile = function(fileId) {
+    uploadedFiles = uploadedFiles.filter(file => file.id != fileId);
     renderUploadedFiles();
 }
 
